@@ -1,0 +1,901 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money-Time Model: M(t)</title>
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#667eea',
+                        'secondary-purple': '#764ba2',
+                        'economic': '#2ecc71',
+                        'functional': '#3498db',
+                        'utility': '#e74c3c',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Global font and background */
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
+        
+        /* Container for the app */
+        #money-time-app {
+            min-height: 100vh;
+        }
+
+        /* Input control styling */
+        .control-group label { width: 150px; font-weight: 500; }
+        
+        /* Chart container to enforce size and responsiveness */
+        .chart-container { height: 300px; width: 100%; }
+        canvas { max-height: 100%; max-width: 100%; }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto;
+            background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 12px;
+            width: 95%; max-width: 900px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Simplified variable styling for report to avoid LaTeX issues */
+        .var-style { font-weight: bold; color: #764ba2; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="money-time-app" class="bg-white shadow-xl rounded-xl max-w-4xl mx-auto">
+
+        <div class="text-center p-6 md:p-8">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Money-Time Model</h1>
+            <p class="text-xl text-secondary-purple font-semibold mb-4">
+                M(t) = $\lambda_E E'(t) + \lambda_F F'(t) + \lambda_U U'(t)$
+            </p>
+            <p class="text-sm text-gray-600 max-w-2xl mx-auto">
+                The money value of time: integrating earnings, health, and well-being
+            </p>
+        </div>
+
+        <!-- Model Configuration -->
+        <div class="bg-gray-50 p-6 rounded-lg mb-8 shadow-inner mx-4 md:mx-8">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 border-b pb-2">Model Configuration</h2>
+            
+            <div class="flex flex-col md:flex-row items-center md:justify-between mb-4 space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-2">
+                    <label for="mode-selector" class="font-semibold text-gray-800">Input Mode:</label>
+                    <select id="mode-selector" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                        <option value="preferences">Calibrate from Preferences</option>
+                        <option value="direct">Direct Weight Input</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center space-x-4 bg-white p-2 rounded-lg shadow-md border">
+                    <label for="age-slider" class="text-gray-800">Your Current Age:</label>
+                    <input type="range" id="age-slider" min="18" max="80" step="1" value="30" class="w-24">
+                    <span id="age-display" class="font-bold text-xl text-primary-blue w-8">30</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Input Area (Sliders) -->
+            <div id="dynamic-inputs" class="space-y-4 pt-4">
+                <!-- Content injected by switchMode() -->
+            </div>
+
+            <!-- Calculated Weights Display -->
+            <div id="weight-display" class="mt-6 p-4 bg-primary-blue bg-opacity-10 rounded-lg text-primary-blue border border-primary-blue border-opacity-30">
+                <!-- Content injected by updateUI() -->
+            </div>
+
+            <div class="text-center mt-6">
+                <button id="generate-report-btn" class="px-6 py-3 bg-secondary-purple text-white font-bold rounded-full shadow-lg hover:bg-opacity-90 transition duration-150 transform hover:scale-[1.02] active:scale-95">
+                    Generate Personalized Report
+                </button>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <h2 class="text-2xl font-bold text-gray-800 mt-10 mb-6 border-b pb-2 mx-4 md:mx-8">Model Output Visualization</h2>
+
+        <div class="space-y-8 p-4 md:p-8 pt-0">
+            <!-- Chart 1: Components -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">1. Component Value Functions: E’, F’, U’ (Normalized)</h3>
+                <div class="chart-container"><canvas id="chart-components"></canvas></div>
+            </div>
+
+            <!-- Chart 2: M(t) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">2. The Value of Time Curve: M(t)</h3>
+                <div class="chart-container"><canvas id="chart-M"></canvas></div>
+            </div>
+
+            <!-- Chart 3: Weights (Pie) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border max-w-lg mx-auto">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3 text-center">3. Model Weight Distribution: lambda ($\lambda$)</h3>
+                <div class="chart-container h-64"><canvas id="chart-weights"></canvas></div>
+            </div>
+
+            <!-- Chart 4: Gradient dM/dt -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">4. Rate of Change: dM/dt (The Gradient)</h3>
+                <div class="chart-container"><canvas id="chart-gradient"></canvas></div>
+            </div>
+            
+            <!-- Chart 5: Opportunity Cost -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">5. Opportunity Cost: O(t)</h3>
+                <div class="chart-container"><canvas id="chart-opportunity-cost"></canvas></div>
+            </div>
+            
+            <!-- Chart 6: M(t) vs O(t) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">6. M(t) vs O(t) Comparison</h3>
+                <div class="chart-container"><canvas id="chart-M-vs-O"></canvas></div>
+            </div>
+
+            <!-- Chart 7: Cumulative S(t) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">7. Cumulative Life Value: S(t) = $\int M(\tau) d\tau$</h3>
+                <div class="chart-container"><canvas id="chart-integral-S"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Report Modal -->
+        <div id="report-modal" class="modal">
+            <div class="modal-content">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Personalized M(t) Analysis Report</h2>
+                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700 text-3xl font-light leading-none transition duration-150">&times;</button>
+                </div>
+                <div id="report-content" class="text-gray-700 space-y-4 overflow-y-auto max-h-[70vh] p-2">
+                    This report is generated client-side based on your current configuration. The charts below are embedded as high-resolution images.
+                </div>
+                <div class="mt-6 pt-4 border-t flex justify-end">
+                    <button id="copy-report-btn" class="px-5 py-2 bg-primary-blue text-white font-semibold rounded-lg shadow-md hover:bg-primary-blue hover:opacity-90 transition duration-150">
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+
+    <script>
+        // Set up the global chart instances
+        const charts = {};
+        const AGE_RANGE = [18, 85];
+        const API_KEY = ""; // Not used in this static model
+
+        // ============================================================================
+        // JAVASCRIPT MATH UTILITIES (Numpy/Scipy Equivalents)
+        // ============================================================================
+        function linearInterpolate(x, xData, yData) {
+            if (x <= xData[0]) return yData[0];
+            if (x >= xData[xData.length - 1]) return yData[xData.length - 1];
+
+            let i = 0;
+            while (xData[i + 1] < x) {
+                i++;
+            }
+            const x0 = xData[i];
+            const y0 = yData[i];
+            const x1 = xData[i + 1];
+            const y1 = yData[i + 1];
+
+            return y0 + (x - x0) * (y1 - y0) / (x1 - x0);
+        }
+
+        function normalizeData(x, y, ageRange) {
+            const yMin = Math.min(...y);
+            const yMax = Math.max(...y);
+
+            const agesFull = [];
+            for (let a = ageRange[0]; a <= ageRange[1]; a++) {
+                agesFull.push(a);
+            }
+
+            const yInterp = agesFull.map(age => {
+                let val = linearInterpolate(age, x, y);
+                let yNorm = (yMax === yMin) ? 0 : (val - yMin) / (yMax - yMin);
+                return Math.max(0, Math.min(1, yNorm));
+            });
+
+            return { agesFull, yInterp };
+        }
+
+        function computeGradient(M, ages) {
+            const dM_dt = new Array(M.length).fill(0);
+            const dt = ages[1] - ages[0];
+
+            // Forward difference for the first point
+            dM_dt[0] = (M[1] - M[0]) / dt;
+
+            // Central difference for interior points
+            for (let i = 1; i < M.length - 1; i++) {
+                dM_dt[i] = (M[i + 1] - M[i - 1]) / (2 * dt);
+            }
+
+            // Backward difference for the last point
+            dM_dt[M.length - 1] = (M[M.length - 1] - M[M.length - 2]) / dt;
+            return dM_dt;
+        }
+
+        function cumulativeTrapezoid(M, ages) {
+            const S = new Array(M.length).fill(0);
+            S[0] = 0;
+            for (let i = 1; i < M.length; i++) {
+                const h = ages[i] - ages[i - 1];
+                const area = (M[i] + M[i - 1]) / 2 * h; // Trapezoidal rule
+                S[i] = S[i - 1] + area;
+            }
+            return S;
+        }
+
+        // ============================================================================
+        // DATA LOADING & MODEL CLASS
+        // ============================================================================
+        function loadEarningsData() {
+            const age_midpoints = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+            // Mock earnings data (normalized to max 35500)
+            const earnings = [18000, 24000, 30000, 33000, 35000, 35500, 34000, 32000, 28000, 15000, 8000];
+            return { age_midpoints, earnings };
+        }
+
+        function loadWellbeingData() {
+            const ages = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80];
+            // Mock subjective satisfaction data (on a 1-10 scale)
+            const satisfaction = [7.4, 7.2, 7.0, 6.9, 6.8, 6.7, 6.9, 7.2, 7.6, 7.8, 7.9, 7.8, 7.6];
+            return { ages, satisfaction };
+        }
+
+        function loadEq5dData() {
+            const ages = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85];
+            // Mock health utility data (QALY-like, 0-1 scale)
+            const utilities = [0.95, 0.94, 0.93, 0.92, 0.90, 0.88, 0.85, 0.82, 0.78, 0.75, 0.70, 0.65, 0.58, 0.50];
+            return { ages, utilities };
+        }
+
+        function computeWeightsFromPreferences(qE, qF, qU, phi) {
+            // These parameters adjust the core weights based on the Philosophy (phi) slider
+            const adjust = 0.3; // Max adjustment factor
+            
+            let qF_adj = qF;
+            let qU_adj = qU;
+
+            // If phi is low (Hedonist, favors U), shift weight from F to U
+            if (phi < 0.5) {
+                const factor = 1 - (phi * 2); // Goes from 1 (phi=0) to 0 (phi=0.5)
+                const shift = adjust * factor;
+                qF_adj = Math.max(1, qF - (shift * 10));
+                qU_adj = Math.min(10, qU + (shift * 10));
+            } 
+            // If phi is high (Stoic, favors F), shift weight from U to F
+            else if (phi > 0.5) {
+                const factor = (phi - 0.5) * 2; // Goes from 0 (phi=0.5) to 1 (phi=1)
+                const shift = adjust * factor;
+                qU_adj = Math.max(1, qU - (shift * 10));
+                qF_adj = Math.min(10, qF + (shift * 10));
+            }
+
+            const totalRaw = qE + qF_adj + qU_adj;
+            
+            const lambda_E = qE / totalRaw;
+            const lambda_F = qF_adj / totalRaw;
+            const lambda_U = qU_adj / totalRaw;
+
+            return [lambda_E, lambda_F, lambda_U];
+        }
+
+
+        class MoneyTimeModel {
+            constructor() {
+                const { age_midpoints: agesE, earnings: E } = loadEarningsData();
+                const { ages: agesF, utilities: F } = loadEq5dData();
+                const { ages: agesU, satisfaction: U } = loadWellbeingData();
+
+                // Generate full age range (18-85)
+                this.ages = [];
+                for (let a = AGE_RANGE[0]; a <= AGE_RANGE[1]; a++) {
+                    this.ages.push(a);
+                }
+
+                // Normalize components
+                this.E_data = normalizeData(agesE, E, AGE_RANGE);
+                this.F_data = normalizeData(agesF, F, AGE_RANGE);
+                this.U_data = normalizeData(agesU, U, AGE_RANGE);
+                
+                this.E_norm = this.E_data.yInterp;
+                this.F_norm = this.F_data.yInterp;
+                this.U_norm = this.U_data.yInterp;
+
+                this.lambda_E = 0.2;
+                this.lambda_F = 0.6;
+                this.lambda_U = 0.2;
+            }
+
+            setWeights(lambda_E, lambda_F, lambda_U) {
+                this.lambda_E = lambda_E;
+                this.lambda_F = lambda_F;
+                this.lambda_U = lambda_U;
+            }
+
+            computeM() {
+                const M = this.ages.map((age, i) => 
+                    (this.lambda_E * this.E_norm[i]) + 
+                    (this.lambda_F * this.F_norm[i]) + 
+                    (this.lambda_U * this.U_norm[i])
+                );
+                return M;
+            }
+
+            computeGradient(M) {
+                return computeGradient(M, this.ages);
+            }
+
+            computeOpportunityCost(M, currentAge) {
+                const currentIdx = this.ages.findIndex(a => a >= currentAge);
+                const M_current = M[currentIdx] || 0;
+
+                // O(t) = M(Current Age) – M(t) for t > Current Age, 0 otherwise
+                const O = this.ages.map((age, i) => {
+                    if (i < currentIdx) {
+                        return 0;
+                    }
+                    return Math.max(0, M_current - M[i]);
+                });
+                return O;
+            }
+
+            computeIntegralS(M) {
+                return cumulativeTrapezoid(M, this.ages);
+            }
+        }
+
+        const model = new MoneyTimeModel();
+
+        // ============================================================================
+        // CHARTING UTILITIES
+        // ============================================================================
+
+        function destroyChart(id) {
+            if (charts[id]) {
+                charts[id].destroy();
+                delete charts[id];
+            }
+        }
+
+        function updateChart(id, title, data, type, options = {}) {
+            destroyChart(id);
+
+            const ctx = document.getElementById(id);
+            if (!ctx) return;
+            
+            // Base options for responsiveness and interaction
+            const baseOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 500, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { position: type === 'doughnut' ? 'bottom' : 'top' },
+                    title: {
+                        display: true,
+                        text: title,
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== undefined) {
+                                    label += context.parsed.y.toFixed(3);
+                                } else if (context.parsed) { // for doughnut
+                                    label += context.formattedValue;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+            };
+
+            // Merge base options with specific options
+            const finalOptions = Chart.helpers.merge(baseOptions, options);
+
+            charts[id] = new Chart(ctx, {
+                type: type,
+                data: data,
+                options: finalOptions
+            });
+        }
+
+        function plotComprehensiveModel(currentAge, M, dM_dt, O, S) {
+            const ages = model.ages;
+            
+            // Find current age indices and values
+            const currentIdx = ages.findIndex(a => a >= currentAge);
+            const M_current = M[currentIdx] || 0;
+            const S_current = S[currentIdx] || 0;
+
+            // Reusable scatter point dataset for current age
+            const currentAgePoint = (label, value) => ({
+                data: [{ x: currentAge, y: value }],
+                type: 'scatter',
+                label: label,
+                backgroundColor: 'red',
+                pointRadius: 6,
+                borderColor: 'white',
+                borderWidth: 2,
+                order: 0
+            });
+
+            // 1. Components E’, F’, U’
+            updateChart('chart-components', 'Normalized Component Functions: E\', F\', U\'', {
+                labels: ages,
+                datasets: [
+                    {
+                        label: "E'(t): Economic", data: model.E_norm, borderColor: '#2ecc71', tension: 0.4, fill: false, borderWidth: 3
+                    },
+                    {
+                        label: "F'(t): Functional", data: model.F_norm, borderColor: '#3498db', tension: 0.4, fill: false, borderWidth: 3
+                    },
+                    {
+                        label: "U'(t): Utility", data: model.U_norm, borderColor: '#e74c3c', tension: 0.4, fill: false, borderWidth: 3
+                    },
+                ]
+            }, 'line', { scales: { y: { min: 0, max: 1.1 } } });
+
+            // 2. M(t) with weights
+            updateChart('chart-M', `M(t) Value Curve`, {
+                labels: ages,
+                datasets: [
+                    {
+                        label: 'M(t) Value Curve', data: M, borderColor: 'purple', tension: 0.4, fill: false, borderWidth: 3
+                    },
+                    currentAgePoint(`M(${currentAge}) Point`, M_current)
+                ]
+            }, 'line', { scales: { y: { min: 0, max: 1.1 } }, });
+
+            // 3. Weight pie chart
+            const weightLabels = [
+                `lambda-E: ${(model.lambda_E * 100).toFixed(1)}% (Economic)`,
+                `lambda-F: ${(model.lambda_F * 100).toFixed(1)}% (Functional)`,
+                `lambda-U: ${(model.lambda_U * 100).toFixed(1)}% (Utility)`
+            ];
+            updateChart('chart-weights', 'Weight Distribution ($\lambda_E, \lambda_F, \lambda_U$)', {
+                labels: weightLabels,
+                datasets: [{
+                    data: [model.lambda_E, model.lambda_F, model.lambda_U],
+                    backgroundColor: ['#2ecc71', '#3498db', '#e74c3c'],
+                    hoverOffset: 10,
+                }]
+            }, 'doughnut', {
+                scales: { x: { display: false }, y: { display: false } },
+                plugins: { 
+                    legend: { position: 'bottom', labels: { boxWidth: 10 } },
+                    title: { display: true, text: 'Weight Distribution ($\lambda_E, \lambda_F, \lambda_U$)', font: { size: 14, weight: 'bold' } }
+                }
+            });
+
+            // 4. Gradient dM/dt (Scatter/Line combination)
+            const gradientData = ages.map((age, i) => ({ x: age, y: dM_dt[i] }));
+            updateChart('chart-gradient', 'Gradient: Rate of Change (dM/dt)', {
+                labels: ages,
+                datasets: [{
+                    label: 'dM/dt',
+                    data: gradientData,
+                    type: 'line', // Use line for trend
+                    borderColor: 'rgba(0,0,0,0.5)',
+                    tension: 0.1,
+                    fill: false,
+                    pointRadius: 3,
+                    pointBackgroundColor: dM_dt.map(g => g >= 0 ? 'green' : 'red'),
+                    pointBorderColor: dM_dt.map(g => g >= 0 ? 'darkgreen' : 'darkred'),
+                    borderWidth: 2
+                }, {
+                    label: 'Zero Line',
+                    data: ages.map(() => 0),
+                    borderColor: 'black',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                }]
+            }, 'line', {
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Age' } },
+                    y: { title: { display: true, text: 'dM/dt' }, beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            });
+
+            // 5. Opportunity Cost O(t)
+            updateChart('chart-opportunity-cost', `Opportunity Cost: O(t) relative to Age ${currentAge}`, {
+                labels: ages,
+                datasets: [
+                    {
+                        label: 'O(t)', data: O, borderColor: 'darkred', backgroundColor: 'rgba(220, 20, 60, 0.3)',
+                        tension: 0.4, fill: 'origin', borderWidth: 2.5
+                    },
+                ]
+            }, 'line', { scales: { y: { min: 0 } }, plugins: { legend: { display: false } } });
+
+            // 6. M(t) vs O(t) Comparison
+            updateChart('chart-M-vs-O', 'M(t) vs O(t) Comparison', {
+                labels: ages,
+                datasets: [
+                    {
+                        label: 'M(t): Value', data: M, borderColor: 'purple', tension: 0.4, fill: false, borderWidth: 2.5
+                    },
+                    {
+                        label: 'O(t): Cost', data: O, borderColor: 'darkred', tension: 0.4, borderDash: [5, 5], fill: false, borderWidth: 2.5
+                    }
+                ]
+            }, 'line', { scales: { y: { min: Math.min(0, ...M, ...O) } } });
+
+            // 7. Cumulative integral S(t) (Full width)
+            updateChart('chart-integral-S', 'S(t): Cumulative Life Value ($\int M(\tau) d\tau$)', {
+                labels: ages,
+                datasets: [
+                    {
+                        label: 'S(t)', data: S, borderColor: 'darkblue', backgroundColor: 'rgba(70, 130, 180, 0.3)',
+                        tension: 0.4, fill: 'origin', borderWidth: 2.5
+                    },
+                    currentAgePoint(`S(${currentAge}) Point`, S_current)
+                ]
+            }, 'line', { scales: { y: { beginAtZero: true } } });
+        }
+
+
+        // ============================================================================
+        // INPUT HANDLING AND UI
+        // ============================================================================
+        
+        function createSlider(id, label, min, max, step, value, description) {
+            const isDecimal = step !== 1;
+            const valueDisplay = isDecimal ? parseFloat(value).toFixed(2) : value;
+            
+            return `
+                <div class="control-group flex flex-col sm:flex-row items-start sm:items-center p-3 bg-white rounded-lg shadow-sm border border-gray-200">
+                    <label for="${id}" class="text-gray-700 font-medium mb-1 sm:mb-0">${label}:</label>
+                    <div class="flex items-center flex-grow w-full sm:w-auto mt-1 sm:mt-0">
+                        <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" class="flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg transition duration-150 ease-in-out">
+                        <span id="${id}-display" class="font-bold text-lg text-secondary-purple ml-4 w-12 text-right">${valueDisplay}</span>
+                    </div>
+                    ${description ? `<p class="text-xs text-gray-500 mt-1 sm:mt-0 sm:ml-4">${description}</p>` : ''}
+                </div>
+            `;
+        }
+        
+        function switchMode() {
+            const mode = document.getElementById('mode-selector').value;
+            const container = document.getElementById('dynamic-inputs');
+            container.innerHTML = "";
+
+            if (mode === 'preferences') {
+                container.innerHTML = `
+                    ${createSlider('q-earnings', 'Career Focus (E)', 1, 10, 1, 5, 'How central is career and income to your sense of self?')}
+                    ${createSlider('q-health', 'Health Focus (F)', 1, 10, 1, 7, 'How much effort do you invest in functional health?')}
+                    ${createSlider('q-optimism', 'Optimism (U)', 1, 10, 1, 6, 'How optimistic are you about future subjective well-being?')}
+                    ${createSlider('phi-slider', 'Philosophy', 0, 1.0, 0.05, 0.5, '← Hedonist (Maximize U) — Stoic (Maximize F) →')}
+                `;
+                
+                ['q-earnings', 'q-health', 'q-optimism', 'phi-slider'].forEach(id => {
+                    const step = parseFloat(document.getElementById(id).step);
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        const val = parseFloat(e.target.value);
+                        document.getElementById(`${id}-display`).textContent = step === 1 ? val : val.toFixed(2);
+                    });
+                    document.getElementById(id).addEventListener('change', updateUI);
+                });
+            } else { // direct
+                container.innerHTML = `
+                    ${createSlider('lambda-E-slider', '$\lambda_E$ (Economic)', 0, 1.0, 0.01, 0.2, 'Raw weight for Economic Value')}
+                    ${createSlider('lambda-F-slider', '$\lambda_F$ (Functional)', 0, 1.0, 0.01, 0.6, 'Raw weight for Functional Value')}
+                    ${createSlider('lambda-U-slider', '$\lambda_U$ (Utility)', 0, 1.0, 0.01, 0.2, 'Raw weight for Subjective Utility')}
+                `;
+                
+                ['lambda-E-slider', 'lambda-F-slider', 'lambda-U-slider'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        document.getElementById(`${id}-display`).textContent = parseFloat(e.target.value).toFixed(2);
+                    });
+                    document.getElementById(id).addEventListener('change', updateUI);
+                });
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            const mode = document.getElementById('mode-selector').value;
+            const ageSlider = document.getElementById('age-slider');
+            const currentAge = parseInt(ageSlider.value);
+            document.getElementById('age-display').textContent = currentAge;
+
+            let lambda_E, lambda_F, lambda_U;
+            let weightHtml = "";
+            let rawTotal = 0; // Initialize for use in Direct mode
+            
+            if (mode === 'preferences') {
+                // Get values from preference sliders
+                const qE = parseInt(document.getElementById('q-earnings').value);
+                const qF = parseInt(document.getElementById('q-health').value);
+                const qU = parseInt(document.getElementById('q-optimism').value);
+                const phi = parseFloat(document.getElementById('phi-slider').value);
+                
+                [lambda_E, lambda_F, lambda_U] = computeWeightsFromPreferences(qE, qF, qU, phi);
+
+                // Display calculated weights
+                weightHtml = `
+                    <p class="font-bold text-lg mb-2">Your Personalized Weights:</p>
+                    <ul class="space-y-1">
+                        <li><span class="font-bold text-economic">$\lambda_E$</span> = ${lambda_E.toFixed(3)} (Economic capacity)</li>
+                        <li><span class="font-bold text-functional">$\lambda_F$</span> = ${lambda_F.toFixed(3)} (Functional ability)</li>
+                        <li><span class="font-bold text-utility">$\lambda_U$</span> = ${lambda_U.toFixed(3)} (Subjective utility)</li>
+                    </ul>
+                `;
+            } else { // Direct Weight Input
+                // Get values from direct sliders
+                const rawE = parseFloat(document.getElementById('lambda-E-slider').value);
+                const rawF = parseFloat(document.getElementById('lambda-F-slider').value);
+                const rawU = parseFloat(document.getElementById('lambda-U-slider').value);
+                
+                rawTotal = rawE + rawF + rawU;
+                const total = rawTotal || 1e-6;
+
+                lambda_E = rawE / total;
+                lambda_F = rawF / total;
+                lambda_U = rawU / total;
+
+                // Determine color based on how close the sum is to 1.0
+                const colorClass = (Math.abs(rawTotal - 1.0) < 0.02) ? 'text-green-600' : 'text-yellow-600';
+                
+                // Display normalized weights
+                weightHtml = `
+                    <p class="font-bold text-lg mb-2">Normalized Weights:</p>
+                    <p class="text-sm mb-2">Raw sum: <span class='font-bold text-lg ${colorClass}'>${rawTotal.toFixed(3)}</span></p>
+                    <ul class="space-y-1">
+                        <li><span class="font-bold text-economic">$\lambda_E$</span> = ${lambda_E.toFixed(3)} (Economic capacity)</li>
+                        <li><span class="font-bold text-functional">$\lambda_F$</span> = ${lambda_F.toFixed(3)} (Functional ability)</li>
+                        <li><span class="font-bold text-utility">$\lambda_U$</span> = ${lambda_U.toFixed(3)} (Subjective utility)</li>
+                    </ul>
+                `;
+            }
+
+            document.getElementById('weight-display').innerHTML = weightHtml;
+
+            // Update model and re-calculate
+            model.setWeights(lambda_E, lambda_F, lambda_U);
+            const M = model.computeM();
+            const dM_dt = model.computeGradient(M);
+            const O = model.computeOpportunityCost(M, currentAge);
+            const S = model.computeIntegralS(M);
+
+            // Redraw all charts
+            plotComprehensiveModel(currentAge, M, dM_dt, O, S);
+        }
+
+        // ============================================================================
+        // REPORT GENERATION (Cleaned up: NO LaTeX symbols)
+        // ============================================================================
+        function getReportNarrative(M, dM_dt, currentAge) {
+            const maxIdx = M.indexOf(Math.max(...M));
+            const peakAge = model.ages[maxIdx].toFixed(0);
+            const peakM = M[maxIdx].toFixed(3);
+
+            const declineAgeIdx = dM_dt.findIndex(d => d < 0 && dM_dt.slice(dM_dt.indexOf(d)).every((val, i, arr) => i < 10 || val <= 0));
+            const startDeclineAge = declineAgeIdx !== -1 ? model.ages[declineAgeIdx].toFixed(0) : "not detected";
+
+            const weights = [
+                { label: 'Economic Capacity', weight: model.lambda_E, color: 'economic' },
+                { label: 'Functional Ability', weight: model.lambda_F, color: 'functional' },
+                { label: 'Subjective Utility', weight: model.lambda_U, color: 'utility' }
+            ].sort((a, b) => b.weight - a.weight);
+            const primaryFocus = weights[0];
+
+            let focusNarrative = '';
+            if (primaryFocus.label.includes('Economic')) {
+                focusNarrative = `Your model places a primary emphasis on **Economic Capacity** ($\lambda_E$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), suggesting your value of time is highly sensitive to career earnings and potential. Decisions that maximize income or career growth will yield the highest perceived life value based on your current configuration.`;
+            } else if (primaryFocus.label.includes('Functional')) {
+                focusNarrative = `Your primary focus is on **Functional Ability** ($\lambda_F$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), highlighting a strong preference for health and longevity. Your model values activities that maintain or improve your physical capacity, which provides significant stability to your overall Value of Time curve.`;
+            } else {
+                focusNarrative = `Your primary focus is **Subjective Utility** ($\lambda_U$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), indicating that your value of time is most influenced by emotional well-being and life satisfaction. You prioritize experiences and circumstances that maximize current happiness and perceived quality of life.`;
+            }
+
+            let curveNarrative = `The overall Value of Time curve, **M(t)**, is projected to peak around **Age ${peakAge}** with a peak value of **${peakM}**. This is the period where the combined value of your earnings, health, and well-being components is maximized. ${startDeclineAge !== "not detected" ? `A significant decline in life value, indicated by a sustained negative rate of change (**dM/dt**), begins around **Age ${startDeclineAge}**. This signals a critical transition point where you should consider adjusting priorities to sustain value.` : `The rate of change (**dM/dt**) shows a relatively stable trajectory through mid-life before declining later, typical of balanced models.`}`;
+            
+            const insightNarrative = `**Insight:** The Opportunity Cost (**O(t)**) chart illustrates the foregone value of time if your current priorities are maintained but your M(t) value declines. A steeper O(t) curve suggests decisions today carry a high future consequence.`;
+
+            return { focusNarrative, curveNarrative, insightNarrative };
+        }
+
+        function getChartImageHTML() {
+            let html = "";
+            // Only convert the 4 main charts for conciseness in the report
+            const chartsToInclude = ['chart-M', 'chart-gradient', 'chart-opportunity-cost', 'chart-integral-S'];
+            
+            chartsToInclude.forEach(id => {
+                const chart = charts[id];
+                if (chart) {
+                    // Use toBase64Image to get the chart as an image (high DPI for quality)
+                    const imgData = chart.toBase64Image('image/png', 1.5);
+                    const title = chart.options.plugins.title.text;
+                    html += `
+                        <div class="p-2 border rounded-lg shadow-sm">
+                            <h4 class="font-semibold text-center mb-2">${title}</h4>
+                            <img src="${imgData}" alt="${title}" class="w-full h-auto rounded-md" />
+                        </div>
+                    `;
+                }
+            });
+            return html;
+        }
+
+        function generateReport() {
+            // 1. Get final calculated values
+            const currentAge = parseInt(document.getElementById('age-slider').value);
+            const M = model.computeM();
+            const S = model.computeIntegralS(M);
+            const dM_dt = model.computeGradient(M);
+
+            // Find value at current age
+            const currentIdx = model.ages.findIndex(a => a >= currentAge);
+            const M_current = M[currentIdx] || 0;
+            const S_current = S[currentIdx] || 0;
+
+            // 2. Get narrative components
+            const { focusNarrative, curveNarrative, insightNarrative } = getReportNarrative(M, dM_dt, currentAge);
+
+            // 3. Get charts as images
+            const chartsHtml = getChartImageHTML();
+
+            // 4. Construct the Proforma HTML Report
+            const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // NOTE: Using a simple span for variable names to ensure they copy as plain text
+            const reportHTML = `
+                <div class="space-y-6">
+                    <h3 class="text-xl font-bold text-secondary-purple">1. Key Model Metrics</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-primary-blue">
+                        <p>Current Value of Time, <span class="var-style">M(${currentAge})</span>: ${M_current.toFixed(3)}</p>
+                        <p>Economic Weight (<span class="var-style">$\lambda_E$</span>): ${model.lambda_E.toFixed(3)}</p>
+                        <p>Functional Weight (<span class="var-style">$\lambda_F$</span>): ${model.lambda_F.toFixed(3)}</p>
+                        <p>Utility Weight (<span class="var-style">$\lambda_U$</span>): ${model.lambda_U.toFixed(3)}</p>
+                        <p>Cumulative Life Value, <span class="var-style">S(${currentAge})</span>: ${S_current.toFixed(2)}</p>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-secondary-purple">2. Proforma Narrative Analysis</h3>
+                    <div class="space-y-4">
+                        <p>${focusNarrative}</p>
+                        <p>${curveNarrative}</p>
+                        <p>${insightNarrative}</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-secondary-purple">3. Visualization Snapshot (Embeds below)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${chartsHtml}
+                    </div>
+
+                    <h3 class="text-xl font-bold text-secondary-purple">4. Recommended Next Steps</h3>
+                    <ul class="list-disc list-inside space-y-2 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                        <li>If **<span class="var-style">$\lambda_E$</span>** is high, review your work-life balance to ensure Functional (<span class="var-style">$\lambda_F$</span>) and Utility (<span class="var-style">$\lambda_U$</span>) values are not being compromised.</li>
+                        <li>If the **<span class="var-style">M(t)</span>** curve peaks early, prioritize investments in health and passion projects to flatten the decline in the later years.</li>
+                        <li>Use the **<span class="var-style">S(t)</span>** (Cumulative Life Value) chart to gauge the long-term impact of your current value system.</li>
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('report-content').innerHTML = reportHTML;
+            document.getElementById('report-modal').style.display = 'block';
+        }
+
+        function alertMessage(message, color) {
+            const colorMap = { 'green': 'bg-green-500', 'yellow': 'bg-yellow-500', 'red': 'bg-red-500' };
+            const colorClass = colorMap[color] || 'bg-gray-700';
+            
+            const existingAlert = document.getElementById('custom-alert');
+            if(existingAlert) existingAlert.remove();
+
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'custom-alert';
+            alertDiv.className = `fixed top-4 right-4 ${colorClass} text-white px-6 py-3 rounded-lg shadow-xl z-[101] transition-all duration-300 ease-in-out transform scale-100`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.classList.add('scale-0');
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 3000);
+        }
+
+        function copyReport() {
+            const reportContent = document.getElementById('report-content');
+            // Create a temporary div to copy styled content
+            const tempDiv = document.createElement('div');
+            // Use innerHTML to preserve basic formatting (like <b> and <p>)
+            tempDiv.innerHTML = reportContent.innerHTML; 
+            document.body.appendChild(tempDiv);
+            
+            const range = document.createRange();
+            range.selectNode(tempDiv);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+
+            try {
+                // Use execCommand as it’s more reliable within iFrame/restricted environments
+                document.execCommand('copy');
+                alertMessage('Report copied successfully! Paste into Google Docs or Word.', 'green');
+            } catch (err) {
+                // Fallback to modern API
+                navigator.clipboard.writeText(reportContent.innerText)
+                .then(() => alertMessage('Report copied (text only). Paste into document.', 'yellow'))
+                .catch(e => alertMessage('Copy failed. Please manually select and copy the text.', 'red'));
+            }
+
+            // Clean up
+            window.getSelection().removeAllRanges();
+            document.body.removeChild(tempDiv);
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+             // Ensure the DOM is fully loaded before trying to access elements
+            const modelInstance = new MoneyTimeModel();
+
+            function initApp() {
+                // Control listeners
+                document.getElementById('mode-selector').addEventListener('change', switchMode);
+                
+                const ageSlider = document.getElementById('age-slider');
+                ageSlider.addEventListener('input', (e) => {
+                    document.getElementById('age-display').textContent = e.target.value;
+                });
+                ageSlider.addEventListener('change', updateUI);
+
+                // Report listeners
+                document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+                document.getElementById('close-modal-btn').addEventListener('click', () => {
+                    document.getElementById('report-modal').style.display = 'none';
+                });
+                document.getElementById('copy-report-btn').addEventListener('click', copyReport);
+
+                // Close modal when clicking outside
+                document.getElementById('report-modal').addEventListener('click', (e) => {
+                    if (e.target.id === 'report-modal') {
+                        document.getElementById('report-modal').style.display = 'none';
+                    }
+                });
+                
+                // Initial setup
+                switchMode();
+            }
+
+            // Check if Chart.js is loaded before initializing
+            if (typeof Chart === 'undefined') {
+                // This is a common issue when using CDNs, waiting a moment might help
+                setTimeout(initApp, 500);
+            } else {
+                initApp();
+            }
+        });
+    </script>
+</body>
+</html>
