@@ -1,901 +1,1256 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money-Time Model: M(t)</title>
-    <!-- Load Tailwind CSS from CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'primary-blue': '#667eea',
-                        'secondary-purple': '#764ba2',
-                        'economic': '#2ecc71',
-                        'functional': '#3498db',
-                        'utility': '#e74c3c',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Global font and background */
-        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
-        
-        /* Container for the app */
-        #money-time-app {
-            min-height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVT Augmented — Money Value of Time</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-panel: #12121a;
+  --bg-card: #1a1a26;
+  --bg-input: #22222e;
+  --gold: #c9a84c;
+  --gold-dim: #8a7435;
+  --gold-bright: #e8c95a;
+  --text-primary: #e8e4dc;
+  --text-secondary: #9a9590;
+  --text-muted: #5a5550;
+  --green: #4ecdc4;
+  --blue: #5b8def;
+  --red: #e8574a;
+  --purple: #9b72cf;
+  --orange: #e89b4a;
+  --border: #2a2a36;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --sans: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
+}
 
-        /* Input control styling */
-        .control-group label { width: 150px; font-weight: 500; }
-        
-        /* Chart container to enforce size and responsiveness */
-        .chart-container { height: 300px; width: 100%; }
-        canvas { max-height: 100%; max-width: 100%; }
-        
-        /* Modal Styles */
-        .modal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto;
-            background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
-        }
-        .modal-content {
-            background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 12px;
-            width: 95%; max-width: 900px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        /* Simplified variable styling for report to avoid LaTeX issues */
-        .var-style { font-weight: bold; color: #764ba2; }
-    </style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+}
+.header h1 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.3rem;
+}
+.header .subtitle {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+}
+.header .equation {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: var(--gold-dim);
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+}
+
+/* Section containers */
+.section-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+}
+.section-box h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-box h2 .h2sub {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.4rem;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+.mode-btn {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 0.5rem 1.2rem;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-btn.active {
+  background: var(--gold-dim);
+  color: var(--bg-deep);
+  font-weight: 500;
+}
+.mode-btn:hover:not(.active) {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+/* Controls grid (direct mode) */
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.control-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+}
+.control-item label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+.control-item label .val {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--gold);
+  min-width: 2.5em;
+  text-align: right;
+}
+.control-item .desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--bg-input);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--bg-deep);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--bg-deep);
+  cursor: pointer;
+}
+
+/* Questionnaire */
+.q-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.q-group-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.8rem 0 0.3rem;
+  margin-top: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.q-group-label.q-gamma { color: var(--green); }
+.q-group-label.q-eta { color: var(--blue); }
+.q-group-label.q-delta { color: var(--red); }
+.q-group-label.q-rho { color: var(--orange); }
+
+.q-item {
+  display: grid;
+  grid-template-columns: 1fr auto 2.5rem;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.q-item:last-child { border-bottom: none; }
+
+.q-text {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.q-text .q-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+  font-style: italic;
+}
+
+.q-item input[type="range"] {
+  width: 140px;
+}
+
+.q-val {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gold);
+  text-align: right;
+}
+
+/* Derived parameters readout */
+.derived-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.derived-item {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.derived-item .dlabel { color: var(--text-muted); }
+.derived-item .dval { color: var(--gold-bright); font-weight: 500; }
+.derived-item .dname {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+/* Readout bar */
+.readout-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.readout-item {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.readout-item .rlabel { color: var(--text-muted); }
+.readout-item .rval { color: var(--gold-bright); font-weight: 500; }
+
+/* Charts */
+.charts-section h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin-bottom: 1.2rem;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 720px) { .chart-grid { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.2rem 0.8rem;
+}
+.chart-card.full-width { grid-column: 1 / -1; }
+.chart-card h3 {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap.tall { height: 300px; }
+
+/* Footer */
+.footer-quote {
+  text-align: center;
+  padding: 2.5rem 1rem 1rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+.footer-quote blockquote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+.footer-quote .attribution {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+/* Waterfall */
+.waterfall-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+@media (max-width: 720px) { .waterfall-layout { grid-template-columns: 1fr; } }
+
+.waterfall-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.wf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.wf-row .wf-label { color: var(--text-secondary); }
+.wf-row .wf-val { font-weight: 500; }
+.wf-row.wf-gross { background: rgba(201,168,76,0.1); border-left: 3px solid var(--gold); }
+.wf-row.wf-gross .wf-val { color: var(--gold-bright); }
+.wf-row.wf-tax { background: rgba(232,87,74,0.06); border-left: 3px solid var(--red); }
+.wf-row.wf-tax .wf-val { color: var(--red); }
+.wf-row.wf-fixed { background: rgba(91,141,239,0.06); border-left: 3px solid var(--blue); }
+.wf-row.wf-fixed .wf-val { color: var(--blue); }
+.wf-row.wf-living { background: rgba(155,114,207,0.06); border-left: 3px solid var(--purple); }
+.wf-row.wf-living .wf-val { color: var(--purple); }
+.wf-row.wf-surplus { background: rgba(78,205,196,0.1); border-left: 3px solid var(--green); }
+.wf-row.wf-surplus .wf-val { color: var(--green); font-size: 1rem; }
+
+.waterfall-narrative {
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  border-left: 3px solid var(--gold);
+}
+.waterfall-narrative p {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  line-height: 1.65;
+  margin-bottom: 0.6rem;
+}
+.waterfall-narrative p:last-child { margin-bottom: 0; }
+.waterfall-narrative .wn-highlight {
+  color: var(--gold-bright);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.waterfall-narrative .wn-warn {
+  color: var(--red);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+/* Utility */
+.hidden { display: none !important; }
+</style>
 </head>
-<body class="p-4 md:p-8">
+<body>
+<div class="app">
 
-    <div id="money-time-app" class="bg-white shadow-xl rounded-xl max-w-4xl mx-auto">
+  <div class="header">
+    <h1>Money Value of Time</h1>
+    <div class="subtitle">AUGMENTED MODEL — MODIGLIANI + GOMPERTZ + COBB-DOUGLAS</div>
+    <div class="equation">M(t) = [λ_E(t)·E' + λ_F(t)·F' + λ_U(t)·U'] · min(E',F',U')^η · S(t)</div>
+  </div>
 
-        <div class="text-center p-6 md:p-8">
-            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Money-Time Model</h1>
-            <p class="text-xl text-secondary-purple font-semibold mb-4">
-                M(t) = $\lambda_E E'(t) + \lambda_F F'(t) + \lambda_U U'(t)$
-            </p>
-            <p class="text-sm text-gray-600 max-w-2xl mx-auto">
-                The money value of time: integrating earnings, health, and well-being
-            </p>
-        </div>
+  <!-- ============ CALIBRATION SECTION ============ -->
+  <div class="section-box">
+    <h2>Calibration
+      <span class="h2sub">The model has four structural parameters. Determine yours from reflective questions, or set them directly.</span>
+    </h2>
 
-        <!-- Model Configuration -->
-        <div class="bg-gray-50 p-6 rounded-lg mb-8 shadow-inner mx-4 md:mx-8">
-            <h2 class="text-xl font-bold text-gray-700 mb-4 border-b pb-2">Model Configuration</h2>
-            
-            <div class="flex flex-col md:flex-row items-center md:justify-between mb-4 space-y-4 md:space-y-0">
-                <div class="flex items-center space-x-2">
-                    <label for="mode-selector" class="font-semibold text-gray-800">Input Mode:</label>
-                    <select id="mode-selector" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-150">
-                        <option value="preferences">Calibrate from Preferences</option>
-                        <option value="direct">Direct Weight Input</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center space-x-4 bg-white p-2 rounded-lg shadow-md border">
-                    <label for="age-slider" class="text-gray-800">Your Current Age:</label>
-                    <input type="range" id="age-slider" min="18" max="80" step="1" value="30" class="w-24">
-                    <span id="age-display" class="font-bold text-xl text-primary-blue w-8">30</span>
-                </div>
-            </div>
-
-            <!-- Dynamic Input Area (Sliders) -->
-            <div id="dynamic-inputs" class="space-y-4 pt-4">
-                <!-- Content injected by switchMode() -->
-            </div>
-
-            <!-- Calculated Weights Display -->
-            <div id="weight-display" class="mt-6 p-4 bg-primary-blue bg-opacity-10 rounded-lg text-primary-blue border border-primary-blue border-opacity-30">
-                <!-- Content injected by updateUI() -->
-            </div>
-
-            <div class="text-center mt-6">
-                <button id="generate-report-btn" class="px-6 py-3 bg-secondary-purple text-white font-bold rounded-full shadow-lg hover:bg-opacity-90 transition duration-150 transform hover:scale-[1.02] active:scale-95">
-                    Generate Personalized Report
-                </button>
-            </div>
-        </div>
-
-        <!-- Charts Section -->
-        <h2 class="text-2xl font-bold text-gray-800 mt-10 mb-6 border-b pb-2 mx-4 md:mx-8">Model Output Visualization</h2>
-
-        <div class="space-y-8 p-4 md:p-8 pt-0">
-            <!-- Chart 1: Components -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">1. Component Value Functions: E’, F’, U’ (Normalized)</h3>
-                <div class="chart-container"><canvas id="chart-components"></canvas></div>
-            </div>
-
-            <!-- Chart 2: M(t) -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">2. The Value of Time Curve: M(t)</h3>
-                <div class="chart-container"><canvas id="chart-M"></canvas></div>
-            </div>
-
-            <!-- Chart 3: Weights (Pie) -->
-            <div class="bg-white p-4 rounded-lg shadow-md border max-w-lg mx-auto">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3 text-center">3. Model Weight Distribution: lambda ($\lambda$)</h3>
-                <div class="chart-container h-64"><canvas id="chart-weights"></canvas></div>
-            </div>
-
-            <!-- Chart 4: Gradient dM/dt -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">4. Rate of Change: dM/dt (The Gradient)</h3>
-                <div class="chart-container"><canvas id="chart-gradient"></canvas></div>
-            </div>
-            
-            <!-- Chart 5: Opportunity Cost -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">5. Opportunity Cost: O(t)</h3>
-                <div class="chart-container"><canvas id="chart-opportunity-cost"></canvas></div>
-            </div>
-            
-            <!-- Chart 6: M(t) vs O(t) -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">6. M(t) vs O(t) Comparison</h3>
-                <div class="chart-container"><canvas id="chart-M-vs-O"></canvas></div>
-            </div>
-
-            <!-- Chart 7: Cumulative S(t) -->
-            <div class="bg-white p-4 rounded-lg shadow-md border">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">7. Cumulative Life Value: S(t) = $\int M(\tau) d\tau$</h3>
-                <div class="chart-container"><canvas id="chart-integral-S"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Report Modal -->
-        <div id="report-modal" class="modal">
-            <div class="modal-content">
-                <div class="flex justify-between items-center border-b pb-3 mb-4">
-                    <h2 class="text-2xl font-bold text-gray-800">Personalized M(t) Analysis Report</h2>
-                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700 text-3xl font-light leading-none transition duration-150">&times;</button>
-                </div>
-                <div id="report-content" class="text-gray-700 space-y-4 overflow-y-auto max-h-[70vh] p-2">
-                    This report is generated client-side based on your current configuration. The charts below are embedded as high-resolution images.
-                </div>
-                <div class="mt-6 pt-4 border-t flex justify-end">
-                    <button id="copy-report-btn" class="px-5 py-2 bg-primary-blue text-white font-semibold rounded-lg shadow-md hover:bg-primary-blue hover:opacity-90 transition duration-150">
-                        Copy to Clipboard
-                    </button>
-                </div>
-            </div>
-        </div>
-        
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-questionnaire" onclick="setMode('questionnaire')">Questionnaire</button>
+      <button class="mode-btn" id="btn-direct" onclick="setMode('direct')">Direct Sliders</button>
     </div>
+
+    <!-- === QUESTIONNAIRE MODE === -->
+    <div id="mode-q">
+
+      <div class="q-group-label q-gamma">γ — Life-Balance Aversion</div>
+      <div class="q-grid">
+        <div class="q-item">
+          <div class="q-text">
+            Would you rather have all three dimensions of life (income, health, meaning) at 6/10 — or one at 9 and another at 3?
+            <span class="q-hint">1 = happy to sacrifice one for another · 10 = need them all balanced</span>
+          </div>
+          <input type="range" id="q1" min="1" max="10" step="1" value="5">
+          <div class="q-val" id="q1v">5</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            If your health declined sharply but your income stayed high, how much would that bother you relative to the reverse?
+            <span class="q-hint">1 = money compensates for most things · 10 = no amount of money offsets poor health</span>
+          </div>
+          <input type="range" id="q2" min="1" max="10" step="1" value="6">
+          <div class="q-val" id="q2v">6</div>
+        </div>
+      </div>
+
+      <div class="q-group-label q-eta">η — Weakest-Link Sensitivity</div>
+      <div class="q-grid">
+        <div class="q-item">
+          <div class="q-text">
+            Can someone with a serious chronic condition still lead a deeply fulfilling life?
+            <span class="q-hint">1 = absolutely, other dimensions compensate fully · 10 = a collapsed dimension ruins everything</span>
+          </div>
+          <input type="range" id="q3" min="1" max="10" step="1" value="4">
+          <div class="q-val" id="q3v">4</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            If you were financially comfortable but had no sense of purpose or connection, how liveable is that?
+            <span class="q-hint">1 = fine, comfort is enough · 10 = meaninglessness is intolerable regardless of wealth</span>
+          </div>
+          <input type="range" id="q4" min="1" max="10" step="1" value="6">
+          <div class="q-val" id="q4v">6</div>
+        </div>
+      </div>
+
+      <div class="q-group-label q-delta">δ — Leisure Dividend from Retirement</div>
+      <div class="q-grid">
+        <div class="q-item">
+          <div class="q-text">
+            How much does your work currently drain versus energise you?
+            <span class="q-hint">1 = I love my work, retirement would bore me · 10 = work is a grind, I live for time off</span>
+          </div>
+          <input type="range" id="q5" min="1" max="10" step="1" value="5">
+          <div class="q-val" id="q5v">5</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            Do you have activities, relationships, or projects that would expand meaningfully if you had more free time?
+            <span class="q-hint">1 = not really · 10 = extensive plans and passions waiting</span>
+          </div>
+          <input type="range" id="q6" min="1" max="10" step="1" value="6">
+          <div class="q-val" id="q6v">6</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            How optimistic are you about your physical capacity to enjoy leisure in your 60s and 70s?
+            <span class="q-hint">1 = I expect significant limitations · 10 = I expect to be active and capable</span>
+          </div>
+          <input type="range" id="q7" min="1" max="10" step="1" value="6">
+          <div class="q-val" id="q7v">6</div>
+        </div>
+      </div>
+
+      <div class="q-group-label q-rho">ρ — Time Preference (Patience)</div>
+      <div class="q-grid">
+        <div class="q-item">
+          <div class="q-text">
+            Would you rather have £10,000 now or £13,000 in three years?
+            <span class="q-hint">1 = take the money now, always · 10 = I'd wait for the larger sum without hesitation</span>
+          </div>
+          <input type="range" id="q8" min="1" max="10" step="1" value="5">
+          <div class="q-val" id="q8v">5</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            How confident are you that institutions (NHS, state pension, social safety net) will function well when you're old?
+            <span class="q-hint">1 = very worried — better to consume value now · 10 = confident the future is well-provisioned</span>
+          </div>
+          <input type="range" id="q9" min="1" max="10" step="1" value="4">
+          <div class="q-val" id="q9v">4</div>
+        </div>
+        <div class="q-item">
+          <div class="q-text">
+            If everyone retired at 55, would the economy collapse or would automation and productivity absorb it?
+            <span class="q-hint">1 = total collapse, dependency crisis · 10 = society would adapt fine, work is already over-fetishised</span>
+          </div>
+          <input type="range" id="q10" min="1" max="10" step="1" value="4">
+          <div class="q-val" id="q10v">4</div>
+        </div>
+      </div>
+
+      <!-- Derived parameters -->
+      <div class="derived-bar" id="derived-bar"></div>
+    </div>
+
+    <!-- === DIRECT SLIDER MODE === -->
+    <div id="mode-d" class="hidden">
+      <div class="controls-grid">
+        <div class="control-item">
+          <label>γ  Risk Aversion <span class="val" id="gamma-val">2.0</span></label>
+          <input type="range" id="gamma" min="0.5" max="6" step="0.1" value="2.0">
+          <div class="desc">Higher γ → weights shift faster toward scarce dimensions</div>
+        </div>
+        <div class="control-item">
+          <label>η  Penalty Exponent <span class="val" id="eta-val">0.30</span></label>
+          <input type="range" id="eta" min="0" max="1" step="0.05" value="0.30">
+          <div class="desc">0 = additive (original). 1 = geometric-mean. Penalises dimensional collapse</div>
+        </div>
+        <div class="control-item">
+          <label>δ  Leisure Dividend <span class="val" id="delta-val">0.15</span></label>
+          <input type="range" id="delta" min="0" max="0.6" step="0.01" value="0.15">
+          <div class="desc">U-boost from retirement. Creates E↔U tension for interior optimum</div>
+        </div>
+        <div class="control-item">
+          <label>ρ  Time Preference <span class="val" id="rho-val">0.040</span></label>
+          <input type="range" id="rho" min="0" max="0.10" step="0.005" value="0.04">
+          <div class="desc">Pure impatience + institutional scepticism</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared: retirement age + current age -->
+    <div class="controls-grid" style="margin-top:1rem;">
+      <div class="control-item">
+        <label>a_r  Retirement Age <span class="val" id="retire-val">65</span></label>
+        <input type="range" id="retire" min="50" max="80" step="1" value="65">
+        <div class="desc">Controls E falloff and U leisure boost timing</div>
+      </div>
+      <div class="control-item">
+        <label>Your Age <span class="val" id="age-val">45</span></label>
+        <input type="range" id="current-age" min="18" max="85" step="1" value="45">
+        <div class="desc">For RSI and opportunity cost readout</div>
+      </div>
+    </div>
+
+    <div class="readout-bar" id="readout-bar"></div>
+  </div>
+
+  <!-- ============ FINANCIAL POSITION ============ -->
+  <div class="section-box">
+    <h2>Financial Position
+      <span class="h2sub">Your income waterfall: how gross income flows through obligations to the disposable surplus where the RSI operates.</span>
+    </h2>
+
+    <div class="controls-grid">
+      <div class="control-item">
+        <label>Gross Annual Income £ <span class="val" id="fin-gross-val">50,000</span></label>
+        <input type="range" id="fin-gross" min="15000" max="200000" step="1000" value="50000">
+      </div>
+      <div class="control-item">
+        <label>Fixed Obligations £/yr <span class="val" id="fin-fixed-val">18,000</span></label>
+        <input type="range" id="fin-fixed" min="0" max="80000" step="500" value="18000">
+        <div class="desc">Rent/mortgage, utilities, insurance, council tax, minimum debt payments</div>
+      </div>
+      <div class="control-item">
+        <label>Living Costs £/yr <span class="val" id="fin-living-val">10,000</span></label>
+        <input type="range" id="fin-living" min="0" max="40000" step="500" value="10000">
+        <div class="desc">Food, transport, clothing, essential spending</div>
+      </div>
+      <div class="control-item">
+        <label>High-Interest Debt £ <span class="val" id="fin-debt-val">0</span></label>
+        <input type="range" id="fin-debt" min="0" max="50000" step="500" value="0">
+        <div class="desc">Credit cards, personal loans (rate > inflation + ρ)</div>
+      </div>
+      <div class="control-item">
+        <label>Emergency Buffer £ <span class="val" id="fin-buffer-val">5,000</span></label>
+        <input type="range" id="fin-buffer" min="0" max="50000" step="500" value="5000">
+        <div class="desc">Current rainy-day savings (target: 3–6 months of fixed obligations)</div>
+      </div>
+      <div class="control-item">
+        <label>Net Wealth £ <span class="val" id="fin-wealth-val">100,000</span></label>
+        <input type="range" id="fin-wealth" min="0" max="2000000" step="5000" value="100000">
+        <div class="desc">Pension pot + ISAs + equity − debts. Modifies effective RSI</div>
+      </div>
+      <div class="control-item">
+        <label>Target Standard <span class="val" id="fin-target-val">Moderate</span></label>
+        <input type="range" id="fin-target" min="0" max="2" step="1" value="1">
+        <div class="desc">PLSA Retirement Living Standard: Minimum / Moderate / Comfortable</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INCOME WATERFALL OUTPUT ============ -->
+  <div class="section-box">
+    <h2>Income Waterfall
+      <span class="h2sub">How your disposable surplus decomposes into four buckets — prioritised by urgency, guided by the RSI.</span>
+    </h2>
+
+    <div class="waterfall-layout">
+      <div class="waterfall-left">
+        <div class="chart-wrap tall"><canvas id="c-waterfall"></canvas></div>
+      </div>
+      <div class="waterfall-right" id="waterfall-detail"></div>
+    </div>
+
+    <!-- Allocation bar chart -->
+    <div style="margin-top:1.5rem;">
+      <h3 style="font-family:var(--mono);font-size:0.72rem;font-weight:400;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.6rem;">Surplus Allocation: 4 Buckets (£/month)</h3>
+      <div class="chart-wrap"><canvas id="c-buckets"></canvas></div>
+    </div>
+
+    <!-- Effective RSI comparison -->
+    <div style="margin-top:1.5rem;">
+      <h3 style="font-family:var(--mono);font-size:0.72rem;font-weight:400;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.6rem;">RSI Raw vs Wealth-Adjusted</h3>
+      <div class="chart-wrap"><canvas id="c-rsi-adj"></canvas></div>
+    </div>
+
+    <!-- Narrative output -->
+    <div class="waterfall-narrative" id="waterfall-narrative"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-section">
+    <h2 style="font-family:var(--serif);font-weight:600;font-size:1.4rem;color:var(--gold);margin-bottom:1.2rem;">Model Output</h2>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>1 · Equilibrium Weights λ(t)</h3>
+        <div class="chart-wrap"><canvas id="c-weights"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>2 · Gompertz Survival S(t)</h3>
+        <div class="chart-wrap"><canvas id="c-survival"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>3 · Components E', F', U' (normalised)</h3>
+        <div class="chart-wrap"><canvas id="c-components"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>4 · Additive vs Discriminatory M(t)</h3>
+        <div class="chart-wrap"><canvas id="c-compare"></canvas></div>
+      </div>
+      <div class="chart-card full-width">
+        <h3>5 · Survival-Weighted Value: M(t)·S(t)·e<sup style="font-size:0.6rem">-ρt</sup></h3>
+        <div class="chart-wrap tall"><canvas id="c-weighted"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>6 · RSI: Set-Aside Indicator</h3>
+        <div class="chart-wrap"><canvas id="c-rsi"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>7 · Lifetime Value vs Retirement Age</h3>
+        <div class="chart-wrap"><canvas id="c-scan"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-quote">
+    <blockquote>
+      The time value of money discounts the future.<br>
+      The money value of time redeems it.
+    </blockquote>
+    <div class="attribution">— McCulloch-James, MVT (2025)</div>
+  </div>
+
+</div>
+
+<script>
+// ================================================================
+// DATA
+// ================================================================
+const AGES = Array.from({length: 75}, (_, i) => i + 16);
+
+function lerp(x, xs, ys) {
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[xs.length-1]) return ys[ys.length-1];
+  let i = 0;
+  while (xs[i+1] < x) i++;
+  const t = (x - xs[i]) / (xs[i+1] - xs[i]);
+  return ys[i] + t * (ys[i+1] - ys[i]);
+}
+function norm01(arr) {
+  const mn = Math.min(...arr), mx = Math.max(...arr), d = mx - mn || 1e-9;
+  return arr.map(v => (v - mn) / d);
+}
+
+const ASHE_X = [17,20,25.5,34.5,44.5,54.5,65];
+const ASHE_Y = [90.4,287.1,574.9,684.2,703.3,650.6,504.7];
+const E_BASE = AGES.map(a => Math.max(0, lerp(a, ASHE_X, ASHE_Y)));
+
+const EQ_X = [16,30,50,70,90];
+const EQ_Y = [0.95,0.913,0.869,0.799,0.705];
+const F_RAW = AGES.map(a => Math.max(0.3, Math.min(1, lerp(a, EQ_X, EQ_Y))));
+const F_NORM = norm01(F_RAW);
+
+const U_X = [17.5,22,27,32,37,42,47,52,57,62,67,72,77,82,87,92.5];
+const U_Y = [7.62,7.35,7.41,7.41,7.34,7.28,7.19,7.18,7.27,7.53,7.81,7.81,7.74,7.64,7.54,7.39];
+const U_RAW = AGES.map(a => lerp(a, U_X, U_Y));
+const U_NORM = norm01(U_RAW);
+
+// ================================================================
+// QUESTIONNAIRE → PARAMETER MAPPING
+// ================================================================
+/*
+  Mapping rationale:
+
+  γ (risk aversion / life-balance):
+    Q1: balance preference (1-10)
+    Q2: health-vs-money asymmetry (1-10)
+    γ = 0.5 + 5.5 × mean(q1, q2) / 10
+    Range: [0.5, 6.0]
+
+  η (weakest-link penalty):
+    Q3: can a collapsed dimension be compensated? (1=yes, 10=no)
+    Q4: is meaninglessness tolerable with comfort? (1=yes, 10=no)
+    η = mean(q3, q4) / 10
+    Range: [0.0, 1.0]
+
+  δ (leisure dividend):
+    Q5: work drain vs energise (10=drain → high δ)
+    Q6: unfulfilled passions waiting (10=many → high δ)
+    Q7: physical optimism for retirement years (10=optimistic → high δ)
+    δ = 0.6 × mean(q5, q6, q7) / 10
+    Range: [0.0, 0.6]
     
-    <!-- JavaScript Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-
-    <script>
-        // Set up the global chart instances
-        const charts = {};
-        const AGE_RANGE = [18, 85];
-        const API_KEY = ""; // Not used in this static model
-
-        // ============================================================================
-        // JAVASCRIPT MATH UTILITIES (Numpy/Scipy Equivalents)
-        // ============================================================================
-        function linearInterpolate(x, xData, yData) {
-            if (x <= xData[0]) return yData[0];
-            if (x >= xData[xData.length - 1]) return yData[xData.length - 1];
-
-            let i = 0;
-            while (xData[i + 1] < x) {
-                i++;
-            }
-            const x0 = xData[i];
-            const y0 = yData[i];
-            const x1 = xData[i + 1];
-            const y1 = yData[i + 1];
-
-            return y0 + (x - x0) * (y1 - y0) / (x1 - x0);
-        }
-
-        function normalizeData(x, y, ageRange) {
-            const yMin = Math.min(...y);
-            const yMax = Math.max(...y);
-
-            const agesFull = [];
-            for (let a = ageRange[0]; a <= ageRange[1]; a++) {
-                agesFull.push(a);
-            }
-
-            const yInterp = agesFull.map(age => {
-                let val = linearInterpolate(age, x, y);
-                let yNorm = (yMax === yMin) ? 0 : (val - yMin) / (yMax - yMin);
-                return Math.max(0, Math.min(1, yNorm));
-            });
-
-            return { agesFull, yInterp };
-        }
-
-        function computeGradient(M, ages) {
-            const dM_dt = new Array(M.length).fill(0);
-            const dt = ages[1] - ages[0];
-
-            // Forward difference for the first point
-            dM_dt[0] = (M[1] - M[0]) / dt;
-
-            // Central difference for interior points
-            for (let i = 1; i < M.length - 1; i++) {
-                dM_dt[i] = (M[i + 1] - M[i - 1]) / (2 * dt);
-            }
-
-            // Backward difference for the last point
-            dM_dt[M.length - 1] = (M[M.length - 1] - M[M.length - 2]) / dt;
-            return dM_dt;
-        }
-
-        function cumulativeTrapezoid(M, ages) {
-            const S = new Array(M.length).fill(0);
-            S[0] = 0;
-            for (let i = 1; i < M.length; i++) {
-                const h = ages[i] - ages[i - 1];
-                const area = (M[i] + M[i - 1]) / 2 * h; // Trapezoidal rule
-                S[i] = S[i - 1] + area;
-            }
-            return S;
-        }
-
-        // ============================================================================
-        // DATA LOADING & MODEL CLASS
-        // ============================================================================
-        function loadEarningsData() {
-            const age_midpoints = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-            // Mock earnings data (normalized to max 35500)
-            const earnings = [18000, 24000, 30000, 33000, 35000, 35500, 34000, 32000, 28000, 15000, 8000];
-            return { age_midpoints, earnings };
-        }
-
-        function loadWellbeingData() {
-            const ages = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80];
-            // Mock subjective satisfaction data (on a 1-10 scale)
-            const satisfaction = [7.4, 7.2, 7.0, 6.9, 6.8, 6.7, 6.9, 7.2, 7.6, 7.8, 7.9, 7.8, 7.6];
-            return { ages, satisfaction };
-        }
-
-        function loadEq5dData() {
-            const ages = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85];
-            // Mock health utility data (QALY-like, 0-1 scale)
-            const utilities = [0.95, 0.94, 0.93, 0.92, 0.90, 0.88, 0.85, 0.82, 0.78, 0.75, 0.70, 0.65, 0.58, 0.50];
-            return { ages, utilities };
-        }
-
-        function computeWeightsFromPreferences(qE, qF, qU, phi) {
-            // These parameters adjust the core weights based on the Philosophy (phi) slider
-            const adjust = 0.3; // Max adjustment factor
-            
-            let qF_adj = qF;
-            let qU_adj = qU;
-
-            // If phi is low (Hedonist, favors U), shift weight from F to U
-            if (phi < 0.5) {
-                const factor = 1 - (phi * 2); // Goes from 1 (phi=0) to 0 (phi=0.5)
-                const shift = adjust * factor;
-                qF_adj = Math.max(1, qF - (shift * 10));
-                qU_adj = Math.min(10, qU + (shift * 10));
-            } 
-            // If phi is high (Stoic, favors F), shift weight from U to F
-            else if (phi > 0.5) {
-                const factor = (phi - 0.5) * 2; // Goes from 0 (phi=0.5) to 1 (phi=1)
-                const shift = adjust * factor;
-                qU_adj = Math.max(1, qU - (shift * 10));
-                qF_adj = Math.min(10, qF + (shift * 10));
-            }
-
-            const totalRaw = qE + qF_adj + qU_adj;
-            
-            const lambda_E = qE / totalRaw;
-            const lambda_F = qF_adj / totalRaw;
-            const lambda_U = qU_adj / totalRaw;
-
-            return [lambda_E, lambda_F, lambda_U];
-        }
-
-
-        class MoneyTimeModel {
-            constructor() {
-                const { age_midpoints: agesE, earnings: E } = loadEarningsData();
-                const { ages: agesF, utilities: F } = loadEq5dData();
-                const { ages: agesU, satisfaction: U } = loadWellbeingData();
-
-                // Generate full age range (18-85)
-                this.ages = [];
-                for (let a = AGE_RANGE[0]; a <= AGE_RANGE[1]; a++) {
-                    this.ages.push(a);
-                }
-
-                // Normalize components
-                this.E_data = normalizeData(agesE, E, AGE_RANGE);
-                this.F_data = normalizeData(agesF, F, AGE_RANGE);
-                this.U_data = normalizeData(agesU, U, AGE_RANGE);
-                
-                this.E_norm = this.E_data.yInterp;
-                this.F_norm = this.F_data.yInterp;
-                this.U_norm = this.U_data.yInterp;
-
-                this.lambda_E = 0.2;
-                this.lambda_F = 0.6;
-                this.lambda_U = 0.2;
-            }
-
-            setWeights(lambda_E, lambda_F, lambda_U) {
-                this.lambda_E = lambda_E;
-                this.lambda_F = lambda_F;
-                this.lambda_U = lambda_U;
-            }
-
-            computeM() {
-                const M = this.ages.map((age, i) => 
-                    (this.lambda_E * this.E_norm[i]) + 
-                    (this.lambda_F * this.F_norm[i]) + 
-                    (this.lambda_U * this.U_norm[i])
-                );
-                return M;
-            }
-
-            computeGradient(M) {
-                return computeGradient(M, this.ages);
-            }
-
-            computeOpportunityCost(M, currentAge) {
-                const currentIdx = this.ages.findIndex(a => a >= currentAge);
-                const M_current = M[currentIdx] || 0;
-
-                // O(t) = M(Current Age) – M(t) for t > Current Age, 0 otherwise
-                const O = this.ages.map((age, i) => {
-                    if (i < currentIdx) {
-                        return 0;
-                    }
-                    return Math.max(0, M_current - M[i]);
-                });
-                return O;
-            }
-
-            computeIntegralS(M) {
-                return cumulativeTrapezoid(M, this.ages);
-            }
-        }
-
-        const model = new MoneyTimeModel();
-
-        // ============================================================================
-        // CHARTING UTILITIES
-        // ============================================================================
-
-        function destroyChart(id) {
-            if (charts[id]) {
-                charts[id].destroy();
-                delete charts[id];
-            }
-        }
-
-        function updateChart(id, title, data, type, options = {}) {
-            destroyChart(id);
-
-            const ctx = document.getElementById(id);
-            if (!ctx) return;
-            
-            // Base options for responsiveness and interaction
-            const baseOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 500, easing: 'easeOutQuart' },
-                plugins: {
-                    legend: { position: type === 'doughnut' ? 'bottom' : 'top' },
-                    title: {
-                        display: true,
-                        text: title,
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== undefined) {
-                                    label += context.parsed.y.toFixed(3);
-                                } else if (context.parsed) { // for doughnut
-                                    label += context.formattedValue;
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-            };
-
-            // Merge base options with specific options
-            const finalOptions = Chart.helpers.merge(baseOptions, options);
-
-            charts[id] = new Chart(ctx, {
-                type: type,
-                data: data,
-                options: finalOptions
-            });
-        }
-
-        function plotComprehensiveModel(currentAge, M, dM_dt, O, S) {
-            const ages = model.ages;
-            
-            // Find current age indices and values
-            const currentIdx = ages.findIndex(a => a >= currentAge);
-            const M_current = M[currentIdx] || 0;
-            const S_current = S[currentIdx] || 0;
-
-            // Reusable scatter point dataset for current age
-            const currentAgePoint = (label, value) => ({
-                data: [{ x: currentAge, y: value }],
-                type: 'scatter',
-                label: label,
-                backgroundColor: 'red',
-                pointRadius: 6,
-                borderColor: 'white',
-                borderWidth: 2,
-                order: 0
-            });
-
-            // 1. Components E’, F’, U’
-            updateChart('chart-components', 'Normalized Component Functions: E\', F\', U\'', {
-                labels: ages,
-                datasets: [
-                    {
-                        label: "E'(t): Economic", data: model.E_norm, borderColor: '#2ecc71', tension: 0.4, fill: false, borderWidth: 3
-                    },
-                    {
-                        label: "F'(t): Functional", data: model.F_norm, borderColor: '#3498db', tension: 0.4, fill: false, borderWidth: 3
-                    },
-                    {
-                        label: "U'(t): Utility", data: model.U_norm, borderColor: '#e74c3c', tension: 0.4, fill: false, borderWidth: 3
-                    },
-                ]
-            }, 'line', { scales: { y: { min: 0, max: 1.1 } } });
-
-            // 2. M(t) with weights
-            updateChart('chart-M', `M(t) Value Curve`, {
-                labels: ages,
-                datasets: [
-                    {
-                        label: 'M(t) Value Curve', data: M, borderColor: 'purple', tension: 0.4, fill: false, borderWidth: 3
-                    },
-                    currentAgePoint(`M(${currentAge}) Point`, M_current)
-                ]
-            }, 'line', { scales: { y: { min: 0, max: 1.1 } }, });
-
-            // 3. Weight pie chart
-            const weightLabels = [
-                `lambda-E: ${(model.lambda_E * 100).toFixed(1)}% (Economic)`,
-                `lambda-F: ${(model.lambda_F * 100).toFixed(1)}% (Functional)`,
-                `lambda-U: ${(model.lambda_U * 100).toFixed(1)}% (Utility)`
-            ];
-            updateChart('chart-weights', 'Weight Distribution ($\lambda_E, \lambda_F, \lambda_U$)', {
-                labels: weightLabels,
-                datasets: [{
-                    data: [model.lambda_E, model.lambda_F, model.lambda_U],
-                    backgroundColor: ['#2ecc71', '#3498db', '#e74c3c'],
-                    hoverOffset: 10,
-                }]
-            }, 'doughnut', {
-                scales: { x: { display: false }, y: { display: false } },
-                plugins: { 
-                    legend: { position: 'bottom', labels: { boxWidth: 10 } },
-                    title: { display: true, text: 'Weight Distribution ($\lambda_E, \lambda_F, \lambda_U$)', font: { size: 14, weight: 'bold' } }
-                }
-            });
-
-            // 4. Gradient dM/dt (Scatter/Line combination)
-            const gradientData = ages.map((age, i) => ({ x: age, y: dM_dt[i] }));
-            updateChart('chart-gradient', 'Gradient: Rate of Change (dM/dt)', {
-                labels: ages,
-                datasets: [{
-                    label: 'dM/dt',
-                    data: gradientData,
-                    type: 'line', // Use line for trend
-                    borderColor: 'rgba(0,0,0,0.5)',
-                    tension: 0.1,
-                    fill: false,
-                    pointRadius: 3,
-                    pointBackgroundColor: dM_dt.map(g => g >= 0 ? 'green' : 'red'),
-                    pointBorderColor: dM_dt.map(g => g >= 0 ? 'darkgreen' : 'darkred'),
-                    borderWidth: 2
-                }, {
-                    label: 'Zero Line',
-                    data: ages.map(() => 0),
-                    borderColor: 'black',
-                    borderWidth: 1,
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 0
-                }]
-            }, 'line', {
-                scales: {
-                    x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Age' } },
-                    y: { title: { display: true, text: 'dM/dt' }, beginAtZero: true }
-                },
-                plugins: { legend: { display: false } }
-            });
-
-            // 5. Opportunity Cost O(t)
-            updateChart('chart-opportunity-cost', `Opportunity Cost: O(t) relative to Age ${currentAge}`, {
-                labels: ages,
-                datasets: [
-                    {
-                        label: 'O(t)', data: O, borderColor: 'darkred', backgroundColor: 'rgba(220, 20, 60, 0.3)',
-                        tension: 0.4, fill: 'origin', borderWidth: 2.5
-                    },
-                ]
-            }, 'line', { scales: { y: { min: 0 } }, plugins: { legend: { display: false } } });
-
-            // 6. M(t) vs O(t) Comparison
-            updateChart('chart-M-vs-O', 'M(t) vs O(t) Comparison', {
-                labels: ages,
-                datasets: [
-                    {
-                        label: 'M(t): Value', data: M, borderColor: 'purple', tension: 0.4, fill: false, borderWidth: 2.5
-                    },
-                    {
-                        label: 'O(t): Cost', data: O, borderColor: 'darkred', tension: 0.4, borderDash: [5, 5], fill: false, borderWidth: 2.5
-                    }
-                ]
-            }, 'line', { scales: { y: { min: Math.min(0, ...M, ...O) } } });
-
-            // 7. Cumulative integral S(t) (Full width)
-            updateChart('chart-integral-S', 'S(t): Cumulative Life Value ($\int M(\tau) d\tau$)', {
-                labels: ages,
-                datasets: [
-                    {
-                        label: 'S(t)', data: S, borderColor: 'darkblue', backgroundColor: 'rgba(70, 130, 180, 0.3)',
-                        tension: 0.4, fill: 'origin', borderWidth: 2.5
-                    },
-                    currentAgePoint(`S(${currentAge}) Point`, S_current)
-                ]
-            }, 'line', { scales: { y: { beginAtZero: true } } });
-        }
-
-
-        // ============================================================================
-        // INPUT HANDLING AND UI
-        // ============================================================================
-        
-        function createSlider(id, label, min, max, step, value, description) {
-            const isDecimal = step !== 1;
-            const valueDisplay = isDecimal ? parseFloat(value).toFixed(2) : value;
-            
-            return `
-                <div class="control-group flex flex-col sm:flex-row items-start sm:items-center p-3 bg-white rounded-lg shadow-sm border border-gray-200">
-                    <label for="${id}" class="text-gray-700 font-medium mb-1 sm:mb-0">${label}:</label>
-                    <div class="flex items-center flex-grow w-full sm:w-auto mt-1 sm:mt-0">
-                        <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" class="flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg transition duration-150 ease-in-out">
-                        <span id="${id}-display" class="font-bold text-lg text-secondary-purple ml-4 w-12 text-right">${valueDisplay}</span>
-                    </div>
-                    ${description ? `<p class="text-xs text-gray-500 mt-1 sm:mt-0 sm:ml-4">${description}</p>` : ''}
-                </div>
-            `;
-        }
-        
-        function switchMode() {
-            const mode = document.getElementById('mode-selector').value;
-            const container = document.getElementById('dynamic-inputs');
-            container.innerHTML = "";
-
-            if (mode === 'preferences') {
-                container.innerHTML = `
-                    ${createSlider('q-earnings', 'Career Focus (E)', 1, 10, 1, 5, 'How central is career and income to your sense of self?')}
-                    ${createSlider('q-health', 'Health Focus (F)', 1, 10, 1, 7, 'How much effort do you invest in functional health?')}
-                    ${createSlider('q-optimism', 'Optimism (U)', 1, 10, 1, 6, 'How optimistic are you about future subjective well-being?')}
-                    ${createSlider('phi-slider', 'Philosophy', 0, 1.0, 0.05, 0.5, '← Hedonist (Maximize U) — Stoic (Maximize F) →')}
-                `;
-                
-                ['q-earnings', 'q-health', 'q-optimism', 'phi-slider'].forEach(id => {
-                    const step = parseFloat(document.getElementById(id).step);
-                    document.getElementById(id).addEventListener('input', (e) => {
-                        const val = parseFloat(e.target.value);
-                        document.getElementById(`${id}-display`).textContent = step === 1 ? val : val.toFixed(2);
-                    });
-                    document.getElementById(id).addEventListener('change', updateUI);
-                });
-            } else { // direct
-                container.innerHTML = `
-                    ${createSlider('lambda-E-slider', '$\lambda_E$ (Economic)', 0, 1.0, 0.01, 0.2, 'Raw weight for Economic Value')}
-                    ${createSlider('lambda-F-slider', '$\lambda_F$ (Functional)', 0, 1.0, 0.01, 0.6, 'Raw weight for Functional Value')}
-                    ${createSlider('lambda-U-slider', '$\lambda_U$ (Utility)', 0, 1.0, 0.01, 0.2, 'Raw weight for Subjective Utility')}
-                `;
-                
-                ['lambda-E-slider', 'lambda-F-slider', 'lambda-U-slider'].forEach(id => {
-                    document.getElementById(id).addEventListener('input', (e) => {
-                        document.getElementById(`${id}-display`).textContent = parseFloat(e.target.value).toFixed(2);
-                    });
-                    document.getElementById(id).addEventListener('change', updateUI);
-                });
-            }
-            updateUI();
-        }
-
-        function updateUI() {
-            const mode = document.getElementById('mode-selector').value;
-            const ageSlider = document.getElementById('age-slider');
-            const currentAge = parseInt(ageSlider.value);
-            document.getElementById('age-display').textContent = currentAge;
-
-            let lambda_E, lambda_F, lambda_U;
-            let weightHtml = "";
-            let rawTotal = 0; // Initialize for use in Direct mode
-            
-            if (mode === 'preferences') {
-                // Get values from preference sliders
-                const qE = parseInt(document.getElementById('q-earnings').value);
-                const qF = parseInt(document.getElementById('q-health').value);
-                const qU = parseInt(document.getElementById('q-optimism').value);
-                const phi = parseFloat(document.getElementById('phi-slider').value);
-                
-                [lambda_E, lambda_F, lambda_U] = computeWeightsFromPreferences(qE, qF, qU, phi);
-
-                // Display calculated weights
-                weightHtml = `
-                    <p class="font-bold text-lg mb-2">Your Personalized Weights:</p>
-                    <ul class="space-y-1">
-                        <li><span class="font-bold text-economic">$\lambda_E$</span> = ${lambda_E.toFixed(3)} (Economic capacity)</li>
-                        <li><span class="font-bold text-functional">$\lambda_F$</span> = ${lambda_F.toFixed(3)} (Functional ability)</li>
-                        <li><span class="font-bold text-utility">$\lambda_U$</span> = ${lambda_U.toFixed(3)} (Subjective utility)</li>
-                    </ul>
-                `;
-            } else { // Direct Weight Input
-                // Get values from direct sliders
-                const rawE = parseFloat(document.getElementById('lambda-E-slider').value);
-                const rawF = parseFloat(document.getElementById('lambda-F-slider').value);
-                const rawU = parseFloat(document.getElementById('lambda-U-slider').value);
-                
-                rawTotal = rawE + rawF + rawU;
-                const total = rawTotal || 1e-6;
-
-                lambda_E = rawE / total;
-                lambda_F = rawF / total;
-                lambda_U = rawU / total;
-
-                // Determine color based on how close the sum is to 1.0
-                const colorClass = (Math.abs(rawTotal - 1.0) < 0.02) ? 'text-green-600' : 'text-yellow-600';
-                
-                // Display normalized weights
-                weightHtml = `
-                    <p class="font-bold text-lg mb-2">Normalized Weights:</p>
-                    <p class="text-sm mb-2">Raw sum: <span class='font-bold text-lg ${colorClass}'>${rawTotal.toFixed(3)}</span></p>
-                    <ul class="space-y-1">
-                        <li><span class="font-bold text-economic">$\lambda_E$</span> = ${lambda_E.toFixed(3)} (Economic capacity)</li>
-                        <li><span class="font-bold text-functional">$\lambda_F$</span> = ${lambda_F.toFixed(3)} (Functional ability)</li>
-                        <li><span class="font-bold text-utility">$\lambda_U$</span> = ${lambda_U.toFixed(3)} (Subjective utility)</li>
-                    </ul>
-                `;
-            }
-
-            document.getElementById('weight-display').innerHTML = weightHtml;
-
-            // Update model and re-calculate
-            model.setWeights(lambda_E, lambda_F, lambda_U);
-            const M = model.computeM();
-            const dM_dt = model.computeGradient(M);
-            const O = model.computeOpportunityCost(M, currentAge);
-            const S = model.computeIntegralS(M);
-
-            // Redraw all charts
-            plotComprehensiveModel(currentAge, M, dM_dt, O, S);
-        }
-
-        // ============================================================================
-        // REPORT GENERATION (Cleaned up: NO LaTeX symbols)
-        // ============================================================================
-        function getReportNarrative(M, dM_dt, currentAge) {
-            const maxIdx = M.indexOf(Math.max(...M));
-            const peakAge = model.ages[maxIdx].toFixed(0);
-            const peakM = M[maxIdx].toFixed(3);
-
-            const declineAgeIdx = dM_dt.findIndex(d => d < 0 && dM_dt.slice(dM_dt.indexOf(d)).every((val, i, arr) => i < 10 || val <= 0));
-            const startDeclineAge = declineAgeIdx !== -1 ? model.ages[declineAgeIdx].toFixed(0) : "not detected";
-
-            const weights = [
-                { label: 'Economic Capacity', weight: model.lambda_E, color: 'economic' },
-                { label: 'Functional Ability', weight: model.lambda_F, color: 'functional' },
-                { label: 'Subjective Utility', weight: model.lambda_U, color: 'utility' }
-            ].sort((a, b) => b.weight - a.weight);
-            const primaryFocus = weights[0];
-
-            let focusNarrative = '';
-            if (primaryFocus.label.includes('Economic')) {
-                focusNarrative = `Your model places a primary emphasis on **Economic Capacity** ($\lambda_E$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), suggesting your value of time is highly sensitive to career earnings and potential. Decisions that maximize income or career growth will yield the highest perceived life value based on your current configuration.`;
-            } else if (primaryFocus.label.includes('Functional')) {
-                focusNarrative = `Your primary focus is on **Functional Ability** ($\lambda_F$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), highlighting a strong preference for health and longevity. Your model values activities that maintain or improve your physical capacity, which provides significant stability to your overall Value of Time curve.`;
-            } else {
-                focusNarrative = `Your primary focus is **Subjective Utility** ($\lambda_U$ = <span class="var-style">${primaryFocus.weight.toFixed(3)}</span>), indicating that your value of time is most influenced by emotional well-being and life satisfaction. You prioritize experiences and circumstances that maximize current happiness and perceived quality of life.`;
-            }
-
-            let curveNarrative = `The overall Value of Time curve, **M(t)**, is projected to peak around **Age ${peakAge}** with a peak value of **${peakM}**. This is the period where the combined value of your earnings, health, and well-being components is maximized. ${startDeclineAge !== "not detected" ? `A significant decline in life value, indicated by a sustained negative rate of change (**dM/dt**), begins around **Age ${startDeclineAge}**. This signals a critical transition point where you should consider adjusting priorities to sustain value.` : `The rate of change (**dM/dt**) shows a relatively stable trajectory through mid-life before declining later, typical of balanced models.`}`;
-            
-            const insightNarrative = `**Insight:** The Opportunity Cost (**O(t)**) chart illustrates the foregone value of time if your current priorities are maintained but your M(t) value declines. A steeper O(t) curve suggests decisions today carry a high future consequence.`;
-
-            return { focusNarrative, curveNarrative, insightNarrative };
-        }
-
-        function getChartImageHTML() {
-            let html = "";
-            // Only convert the 4 main charts for conciseness in the report
-            const chartsToInclude = ['chart-M', 'chart-gradient', 'chart-opportunity-cost', 'chart-integral-S'];
-            
-            chartsToInclude.forEach(id => {
-                const chart = charts[id];
-                if (chart) {
-                    // Use toBase64Image to get the chart as an image (high DPI for quality)
-                    const imgData = chart.toBase64Image('image/png', 1.5);
-                    const title = chart.options.plugins.title.text;
-                    html += `
-                        <div class="p-2 border rounded-lg shadow-sm">
-                            <h4 class="font-semibold text-center mb-2">${title}</h4>
-                            <img src="${imgData}" alt="${title}" class="w-full h-auto rounded-md" />
-                        </div>
-                    `;
-                }
-            });
-            return html;
-        }
-
-        function generateReport() {
-            // 1. Get final calculated values
-            const currentAge = parseInt(document.getElementById('age-slider').value);
-            const M = model.computeM();
-            const S = model.computeIntegralS(M);
-            const dM_dt = model.computeGradient(M);
-
-            // Find value at current age
-            const currentIdx = model.ages.findIndex(a => a >= currentAge);
-            const M_current = M[currentIdx] || 0;
-            const S_current = S[currentIdx] || 0;
-
-            // 2. Get narrative components
-            const { focusNarrative, curveNarrative, insightNarrative } = getReportNarrative(M, dM_dt, currentAge);
-
-            // 3. Get charts as images
-            const chartsHtml = getChartImageHTML();
-
-            // 4. Construct the Proforma HTML Report
-            const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-            // NOTE: Using a simple span for variable names to ensure they copy as plain text
-            const reportHTML = `
-                <div class="space-y-6">
-                    <h3 class="text-xl font-bold text-secondary-purple">1. Key Model Metrics</h3>
-                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-primary-blue">
-                        <p>Current Value of Time, <span class="var-style">M(${currentAge})</span>: ${M_current.toFixed(3)}</p>
-                        <p>Economic Weight (<span class="var-style">$\lambda_E$</span>): ${model.lambda_E.toFixed(3)}</p>
-                        <p>Functional Weight (<span class="var-style">$\lambda_F$</span>): ${model.lambda_F.toFixed(3)}</p>
-                        <p>Utility Weight (<span class="var-style">$\lambda_U$</span>): ${model.lambda_U.toFixed(3)}</p>
-                        <p>Cumulative Life Value, <span class="var-style">S(${currentAge})</span>: ${S_current.toFixed(2)}</p>
-                    </div>
-                    
-                    <h3 class="text-xl font-bold text-secondary-purple">2. Proforma Narrative Analysis</h3>
-                    <div class="space-y-4">
-                        <p>${focusNarrative}</p>
-                        <p>${curveNarrative}</p>
-                        <p>${insightNarrative}</p>
-                    </div>
-
-                    <h3 class="text-xl font-bold text-secondary-purple">3. Visualization Snapshot (Embeds below)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${chartsHtml}
-                    </div>
-
-                    <h3 class="text-xl font-bold text-secondary-purple">4. Recommended Next Steps</h3>
-                    <ul class="list-disc list-inside space-y-2 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
-                        <li>If **<span class="var-style">$\lambda_E$</span>** is high, review your work-life balance to ensure Functional (<span class="var-style">$\lambda_F$</span>) and Utility (<span class="var-style">$\lambda_U$</span>) values are not being compromised.</li>
-                        <li>If the **<span class="var-style">M(t)</span>** curve peaks early, prioritize investments in health and passion projects to flatten the decline in the later years.</li>
-                        <li>Use the **<span class="var-style">S(t)</span>** (Cumulative Life Value) chart to gauge the long-term impact of your current value system.</li>
-                    </ul>
-                </div>
-            `;
-
-            document.getElementById('report-content').innerHTML = reportHTML;
-            document.getElementById('report-modal').style.display = 'block';
-        }
-
-        function alertMessage(message, color) {
-            const colorMap = { 'green': 'bg-green-500', 'yellow': 'bg-yellow-500', 'red': 'bg-red-500' };
-            const colorClass = colorMap[color] || 'bg-gray-700';
-            
-            const existingAlert = document.getElementById('custom-alert');
-            if(existingAlert) existingAlert.remove();
-
-            const alertDiv = document.createElement('div');
-            alertDiv.id = 'custom-alert';
-            alertDiv.className = `fixed top-4 right-4 ${colorClass} text-white px-6 py-3 rounded-lg shadow-xl z-[101] transition-all duration-300 ease-in-out transform scale-100`;
-            alertDiv.textContent = message;
-            document.body.appendChild(alertDiv);
-
-            setTimeout(() => {
-                alertDiv.classList.add('scale-0');
-                setTimeout(() => alertDiv.remove(), 300);
-            }, 3000);
-        }
-
-        function copyReport() {
-            const reportContent = document.getElementById('report-content');
-            // Create a temporary div to copy styled content
-            const tempDiv = document.createElement('div');
-            // Use innerHTML to preserve basic formatting (like <b> and <p>)
-            tempDiv.innerHTML = reportContent.innerHTML; 
-            document.body.appendChild(tempDiv);
-            
-            const range = document.createRange();
-            range.selectNode(tempDiv);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-
-            try {
-                // Use execCommand as it’s more reliable within iFrame/restricted environments
-                document.execCommand('copy');
-                alertMessage('Report copied successfully! Paste into Google Docs or Word.', 'green');
-            } catch (err) {
-                // Fallback to modern API
-                navigator.clipboard.writeText(reportContent.innerText)
-                .then(() => alertMessage('Report copied (text only). Paste into document.', 'yellow'))
-                .catch(e => alertMessage('Copy failed. Please manually select and copy the text.', 'red'));
-            }
-
-            // Clean up
-            window.getSelection().removeAllRanges();
-            document.body.removeChild(tempDiv);
-        }
-
-        // ============================================================================
-        // INITIALIZATION
-        // ============================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-             // Ensure the DOM is fully loaded before trying to access elements
-            const modelInstance = new MoneyTimeModel();
-
-            function initApp() {
-                // Control listeners
-                document.getElementById('mode-selector').addEventListener('change', switchMode);
-                
-                const ageSlider = document.getElementById('age-slider');
-                ageSlider.addEventListener('input', (e) => {
-                    document.getElementById('age-display').textContent = e.target.value;
-                });
-                ageSlider.addEventListener('change', updateUI);
-
-                // Report listeners
-                document.getElementById('generate-report-btn').addEventListener('click', generateReport);
-                document.getElementById('close-modal-btn').addEventListener('click', () => {
-                    document.getElementById('report-modal').style.display = 'none';
-                });
-                document.getElementById('copy-report-btn').addEventListener('click', copyReport);
-
-                // Close modal when clicking outside
-                document.getElementById('report-modal').addEventListener('click', (e) => {
-                    if (e.target.id === 'report-modal') {
-                        document.getElementById('report-modal').style.display = 'none';
-                    }
-                });
-                
-                // Initial setup
-                switchMode();
-            }
-
-            // Check if Chart.js is loaded before initializing
-            if (typeof Chart === 'undefined') {
-                // This is a common issue when using CDNs, waiting a moment might help
-                setTimeout(initApp, 500);
-            } else {
-                initApp();
-            }
-        });
-    </script>
+    Q7 matters because δ is only valuable if you expect the health
+    to actually enjoy it. Pessimism about late-life capacity should
+    reduce δ (the boost won't materialise if F is too low).
+
+  ρ (time preference / impatience):
+    Q8: £10k now vs £13k in 3 years (10=patient → low ρ)
+    Q9: institutional confidence (10=confident → low ρ)
+    Q10: welfare sustainability (10=optimistic → low ρ)
+    ρ = 0.10 × (1 - mean(q8, q9, q10) / 10)
+    Range: [0.0, 0.10]
+    
+    Q9-Q10 capture the social discount: if you believe the state
+    pension will be underfunded because nobody's working, that's
+    rational grounds for higher ρ (consume value sooner).
+*/
+
+function questToParams() {
+  const q = id => parseInt(document.getElementById(id).value);
+  const q1=q('q1'), q2=q('q2'), q3=q('q3'), q4=q('q4'), q5=q('q5');
+  const q6=q('q6'), q7=q('q7'), q8=q('q8'), q9=q('q9'), q10=q('q10');
+
+  const gamma = 0.5 + 5.5 * (q1 + q2) / 20;
+  const eta   = (q3 + q4) / 20;
+  const delta = 0.6 * (q5 + q6 + q7) / 30;
+  const rho   = 0.10 * (1 - (q8 + q9 + q10) / 30);
+
+  return { gamma, eta, delta, rho };
+}
+
+function updateDerivedBar() {
+  const p = questToParams();
+  const bar = document.getElementById('derived-bar');
+  bar.innerHTML = [
+    { sym: 'γ', val: p.gamma.toFixed(2), name: 'life-balance aversion', color: 'var(--green)' },
+    { sym: 'η', val: p.eta.toFixed(2),   name: 'weakest-link penalty',  color: 'var(--blue)' },
+    { sym: 'δ', val: p.delta.toFixed(2), name: 'leisure dividend',      color: 'var(--red)' },
+    { sym: 'ρ', val: p.rho.toFixed(3),   name: 'time preference',       color: 'var(--orange)' },
+  ].map(d => `<div class="derived-item">
+    <span class="dlabel" style="color:${d.color}">${d.sym}</span>
+    <span class="dval"> = ${d.val}</span>
+    <span class="dname">${d.name}</span>
+  </div>`).join('');
+}
+
+// ================================================================
+// MODE SWITCHING
+// ================================================================
+let currentMode = 'questionnaire';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-q').classList.toggle('hidden', mode !== 'questionnaire');
+  document.getElementById('mode-d').classList.toggle('hidden', mode !== 'direct');
+  document.getElementById('btn-questionnaire').classList.toggle('active', mode === 'questionnaire');
+  document.getElementById('btn-direct').classList.toggle('active', mode === 'direct');
+  render();
+}
+
+function getParams() {
+  if (currentMode === 'questionnaire') {
+    return questToParams();
+  }
+  return {
+    gamma: parseFloat(document.getElementById('gamma').value),
+    eta:   parseFloat(document.getElementById('eta').value),
+    delta: parseFloat(document.getElementById('delta').value),
+    rho:   parseFloat(document.getElementById('rho').value),
+  };
+}
+
+// ================================================================
+// MODEL
+// ================================================================
+function retirementFalloff(ages, a0, k=3, floor=0.3) {
+  return ages.map(a => floor + (1-floor) / (1 + Math.exp((a-a0)/k)));
+}
+function gompertzSurvival(ages, alpha=0.0002, beta=0.085, t0=20) {
+  return ages.map(a => Math.exp(-(alpha/beta)*(Math.exp(beta*(a-t0))-1)));
+}
+function leisureBoost(ages, ar, delta, k=3) {
+  return ages.map(a => delta / (1 + Math.exp(-(a-ar)/k)));
+}
+function trapz(y, x) {
+  let s=0; for(let i=1;i<y.length;i++) s+=(y[i]+y[i-1])*(x[i]-x[i-1])/2; return s;
+}
+
+function modiglianiWeights(idx, E, F, U, D, gamma) {
+  const rem = (arr) => {
+    const sl=arr.slice(idx), dl=D.slice(idx), xs=AGES.slice(idx);
+    if(sl.length<2) return 1e-8;
+    return Math.max(trapz(sl.map((v,i)=>v*dl[i]), xs), 1e-8);
+  };
+  const rE=rem(E), rF=rem(F), rU=rem(U);
+  const ig = -1/gamma;
+  let wE=Math.pow(rE,ig), wF=Math.pow(rF,ig), wU=Math.pow(rU,ig);
+  const t=wE+wF+wU;
+  return [wE/t, wF/t, wU/t];
+}
+
+function computeModel(params) {
+  const {gamma, eta, delta, rho, retireAge} = params;
+  const fall = retirementFalloff(AGES, retireAge);
+  const E_eff = E_BASE.map((e,i) => e*fall[i]);
+  const E_n = norm01(E_eff);
+  const boost = leisureBoost(AGES, retireAge, delta);
+  const U_b = U_NORM.map((u,i) => Math.min(1, u+boost[i]));
+  const S = gompertzSurvival(AGES);
+  const D = AGES.map((a,i) => S[i]*Math.exp(-rho*(a-AGES[0])));
+  const lE=[], lF=[], lU=[];
+  for(let i=0;i<AGES.length;i++){
+    const [we,wf,wu] = modiglianiWeights(i, E_n, F_NORM, U_b, D, gamma);
+    lE.push(we); lF.push(wf); lU.push(wu);
+  }
+  const M_add = AGES.map((_,i) => lE[i]*E_n[i]+lF[i]*F_NORM[i]+lU[i]*U_b[i]);
+  const M_disc = AGES.map((_,i) => {
+    const a = M_add[i];
+    const fl = Math.min(E_n[i], F_NORM[i], U_b[i]);
+    return a * Math.pow(Math.max(fl,1e-6), eta);
+  });
+  const M_w = AGES.map((_,i)=>M_disc[i]*D[i]);
+  const mMax = Math.max(...M_disc);
+  const RSI = AGES.map((a,i) => a<40 ? 0 : 1-M_disc[i]/mMax);
+  return { E_n, F_NORM, U_b, S, D, lE, lF, lU, M_add, M_disc, M_w, RSI,
+    lt_raw: trapz(M_disc,AGES),
+    lt_surv: trapz(M_disc.map((m,i)=>m*S[i]),AGES),
+    lt_full: trapz(M_w,AGES) };
+}
+
+function lifetimeScan(params) {
+  const ras = Array.from({length:31},(_,i)=>i+50);
+  const raw=[], surv=[], full=[];
+  for(const ra of ras){
+    const o = computeModel({...params, retireAge:ra});
+    raw.push(o.lt_raw); surv.push(o.lt_surv); full.push(o.lt_full);
+  }
+  return {ras, raw, surv, full};
+}
+
+// ================================================================
+// CHARTS
+// ================================================================
+const charts = {};
+const CJ = {
+  responsive:true, maintainAspectRatio:false, animation:{duration:250},
+  plugins:{
+    legend:{labels:{color:'#9a9590',font:{family:"'IBM Plex Mono'",size:10},boxWidth:12}},
+    title:{display:false}
+  },
+  scales:{
+    x:{ticks:{color:'#5a5550',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+    y:{ticks:{color:'#5a5550',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(255,255,255,0.06)'}}
+  }
+};
+function ds(label,data,color,opts={}){
+  return{label,data,borderColor:color,
+    backgroundColor:opts.fill?color.replace(')',',0.12)').replace('rgb','rgba'):'transparent',
+    borderWidth:opts.width||2,pointRadius:0,tension:0.35,fill:opts.fill||false,
+    borderDash:opts.dash||[],...(opts.extra||{})};
+}
+function mc(id,type,datasets,opts={}){
+  if(charts[id])charts[id].destroy();
+  let cfg=JSON.parse(JSON.stringify(CJ));
+  if(opts.yMax)cfg.scales.y.max=opts.yMax;
+  if(opts.yMin!==undefined)cfg.scales.y.min=opts.yMin;
+  if(opts.xLabel)cfg.scales.x.title={display:true,text:opts.xLabel,color:'#5a5550',font:{family:"'IBM Plex Mono'",size:9}};
+  // Allow extra options to override (for stacked bars etc)
+  if(opts.extra){
+    if(opts.extra.indexAxis) cfg.indexAxis = opts.extra.indexAxis;
+    if(opts.extra.scales) cfg.scales = opts.extra.scales;
+  }
+  charts[id]=new Chart(document.getElementById(id),{type,data:{labels:opts.labels||AGES,datasets},options:cfg});
+}
+
+// ================================================================
+// FINANCIAL WATERFALL
+// ================================================================
+const PLSA_ANNUAL = [14400, 31300, 43100]; // min, moderate, comfortable (2025/26)
+const PLSA_LABELS = ['Minimum','Moderate','Comfortable'];
+const STATE_PENSION_ANNUAL = 11973; // 2025/26 full new state pension
+
+function estimateTax(gross) {
+  // Simplified UK income tax + NI 2025/26
+  const pa = 12570;
+  let tax = 0;
+  if (gross > pa) tax += Math.min(gross - pa, 50270 - pa) * 0.20;
+  if (gross > 50270) tax += Math.min(gross - 50270, 125140 - 50270) * 0.40;
+  if (gross > 125140) tax += (gross - 125140) * 0.45;
+  // NI (employee class 1)
+  const niThresh = 12570;
+  const niUpper = 50270;
+  let ni = 0;
+  if (gross > niThresh) ni += Math.min(gross - niThresh, niUpper - niThresh) * 0.08;
+  if (gross > niUpper) ni += (gross - niUpper) * 0.02;
+  return Math.round(tax + ni);
+}
+
+function computeWaterfall(out, currentAge) {
+  const gross = parseFloat(document.getElementById('fin-gross').value);
+  const fixed = parseFloat(document.getElementById('fin-fixed').value);
+  const living = parseFloat(document.getElementById('fin-living').value);
+  const debt = parseFloat(document.getElementById('fin-debt').value);
+  const buffer = parseFloat(document.getElementById('fin-buffer').value);
+  const wealth = parseFloat(document.getElementById('fin-wealth').value);
+  const targetIdx = parseInt(document.getElementById('fin-target').value);
+  const retireAge = parseInt(document.getElementById('retire').value);
+
+  const taxNI = estimateTax(gross);
+  const net = gross - taxNI;
+  const discretionary = Math.max(0, net - fixed);
+  const surplus = Math.max(0, discretionary - living);
+
+  // RSI at current age
+  const ci = AGES.indexOf(currentAge);
+  const rsiRaw = ci >= 0 ? out.RSI[ci] : 0;
+  const sNow = ci >= 0 ? out.S[ci] : 0.5;
+
+  // Wealth target: PV of remaining retirement consumption
+  const targetAnnual = PLSA_ANNUAL[targetIdx];
+  const yearsInRetirement = Math.max(1, 90 - retireAge);
+  // Simple annuity PV with mortality weighting
+  let wTarget = 0;
+  for (let y = 0; y < yearsInRetirement; y++) {
+    const age = retireAge + y;
+    if (age > 90) break;
+    const sAge = Math.exp(-(0.0002/0.085) * (Math.exp(0.085*(age-20)) - 1));
+    const disc = 1 / Math.pow(1.03, y);
+    wTarget += (targetAnnual - STATE_PENSION_ANNUAL) * sAge * disc;
+  }
+  wTarget = Math.max(0, wTarget);
+
+  // Effective RSI: reduced by wealth already accumulated
+  const wealthRatio = wTarget > 0 ? Math.min(1, wealth / wTarget) : 1;
+  const rsiEffective = rsiRaw * Math.max(0, 1 - wealthRatio);
+
+  // Buffer target: 4 months of fixed obligations
+  const bufferTarget = (fixed / 12) * 4;
+  const bufferDeficit = Math.max(0, bufferTarget - buffer);
+
+  // Bucket allocation (annual)
+  let b1_buffer = 0, b2_debt = 0, b3_present = 0, b4_future = 0;
+  let remaining = surplus;
+
+  // Priority 1: buffer deficit (spread over 12 months, cap at surplus)
+  if (bufferDeficit > 0) {
+    b1_buffer = Math.min(remaining, bufferDeficit);
+    remaining -= b1_buffer;
+  }
+
+  // Priority 2: high-interest debt (aggressive: 30% of remaining, or all debt/year)
+  if (debt > 0 && remaining > 0) {
+    b2_debt = Math.min(remaining, Math.min(remaining * 0.30, debt));
+    remaining -= b2_debt;
+  }
+
+  // Priority 3 & 4: split by effective RSI
+  b4_future = remaining * rsiEffective;
+  b3_present = remaining - b4_future;
+
+  return {
+    gross, taxNI, net, fixed, living, discretionary, surplus,
+    b1_buffer, b2_debt, b3_present, b4_future,
+    bufferTarget, bufferDeficit, debt, wealth, wTarget,
+    rsiRaw, rsiEffective, wealthRatio,
+    targetLabel: PLSA_LABELS[targetIdx],
+    targetAnnual
+  };
+}
+
+function renderWaterfall(out, currentAge) {
+  const wf = computeWaterfall(out, currentAge);
+  const fmt = v => '£' + Math.round(v).toLocaleString();
+  const fmtM = v => '£' + Math.round(v/12).toLocaleString() + '/mo';
+
+  // Detail rows
+  document.getElementById('waterfall-detail').innerHTML = `
+    <div class="wf-row wf-gross"><span class="wf-label">Gross Income</span><span class="wf-val">${fmt(wf.gross)}</span></div>
+    <div class="wf-row wf-tax"><span class="wf-label">Tax + NI</span><span class="wf-val">−${fmt(wf.taxNI)}</span></div>
+    <div class="wf-row" style="border-left:3px solid var(--text-muted);background:rgba(255,255,255,0.02)"><span class="wf-label">Net Income</span><span class="wf-val" style="color:var(--text-primary)">${fmt(wf.net)}</span></div>
+    <div class="wf-row wf-fixed"><span class="wf-label">Fixed Obligations</span><span class="wf-val">−${fmt(wf.fixed)}</span></div>
+    <div class="wf-row wf-living"><span class="wf-label">Living Costs</span><span class="wf-val">−${fmt(wf.living)}</span></div>
+    <div class="wf-row wf-surplus"><span class="wf-label">Disposable Surplus</span><span class="wf-val">${fmt(wf.surplus)}</span></div>
+  `;
+
+  // Waterfall chart (stacked horizontal bar)
+  mc('c-waterfall', 'bar', [
+    { label: 'Tax+NI', data: [wf.taxNI], backgroundColor: 'rgba(232,87,74,0.6)', borderWidth: 0 },
+    { label: 'Fixed', data: [wf.fixed], backgroundColor: 'rgba(91,141,239,0.5)', borderWidth: 0 },
+    { label: 'Living', data: [wf.living], backgroundColor: 'rgba(155,114,207,0.5)', borderWidth: 0 },
+    { label: 'Surplus', data: [wf.surplus], backgroundColor: 'rgba(78,205,196,0.5)', borderWidth: 0 },
+  ], {
+    labels: ['Income'],
+    extra: {
+      indexAxis: 'y',
+      scales: {
+        x: { stacked: true, ticks: { color: '#5a5550', font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => '£'+Math.round(v/1000)+'k' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { stacked: true, display: false }
+      }
+    }
+  });
+
+  // Bucket allocation chart
+  mc('c-buckets', 'bar', [
+    { label: '1. Buffer', data: [wf.b1_buffer/12], backgroundColor: 'rgba(232,155,74,0.7)', borderWidth: 0 },
+    { label: '2. Debt', data: [wf.b2_debt/12], backgroundColor: 'rgba(232,87,74,0.7)', borderWidth: 0 },
+    { label: '3. Present (U·F·S)', data: [wf.b3_present/12], backgroundColor: 'rgba(78,205,196,0.7)', borderWidth: 0 },
+    { label: '4. Future (RSI)', data: [wf.b4_future/12], backgroundColor: 'rgba(201,168,76,0.7)', borderWidth: 0 },
+  ], {
+    labels: ['Monthly'],
+    extra: {
+      indexAxis: 'y',
+      scales: {
+        x: { stacked: true, ticks: { color: '#5a5550', font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => '£'+Math.round(v) }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { stacked: true, display: false }
+      }
+    }
+  });
+
+  // RSI raw vs adjusted chart
+  const ci = AGES.indexOf(currentAge);
+  const rsiAdj = AGES.map((a, i) => {
+    const raw = out.RSI[i];
+    return raw * Math.max(0, 1 - wf.wealthRatio);
+  });
+  mc('c-rsi-adj', 'line', [
+    ds('RSI raw', out.RSI, '#e89b4a', { dash: [4,3] }),
+    ds('RSI effective (wealth-adjusted)', rsiAdj, '#c9a84c', { fill: true, width: 2.5 }),
+  ], { yMax: 1 });
+
+  // Narrative
+  const pctFuture = wf.surplus > 0 ? (wf.b4_future / wf.surplus * 100).toFixed(0) : 0;
+  const pctPresent = wf.surplus > 0 ? (wf.b3_present / wf.surplus * 100).toFixed(0) : 0;
+
+  let narrative = '';
+
+  if (wf.surplus <= 0) {
+    narrative = `<p>Your fixed obligations and living costs consume your entire net income. There is no surplus to allocate. The MVT model cannot guide saving when there is nothing to save — the priority is reducing fixed obligations or increasing gross income.</p>`;
+  } else {
+    narrative = `<p>Your disposable surplus is <span class="wn-highlight">${fmt(wf.surplus)}/yr (${fmtM(wf.surplus)})</span>. `;
+
+    if (wf.bufferDeficit > 0) {
+      narrative += `Your emergency buffer is <span class="wn-warn">${fmt(wf.bufferDeficit)}</span> short of the 4-month target (${fmt(wf.bufferTarget)}). This is the first claim on surplus — protecting against E(t) discontinuities. `;
+    }
+
+    if (wf.debt > 0) {
+      narrative += `You carry <span class="wn-warn">${fmt(wf.debt)}</span> in high-interest debt, which consumes future earnings capacity. The model directs ${fmtM(wf.b2_debt)} toward accelerated repayment. `;
+    }
+
+    narrative += `</p><p>After buffer and debt claims, the RSI splits remaining surplus: <span class="wn-highlight">${pctPresent}% to present consumption</span> (experiences, health, relationships while F(t)×S(t) is high) and <span class="wn-highlight">${pctFuture}% to future set-aside</span> (pension, ISA).`;
+
+    if (wf.wealthRatio >= 0.9) {
+      narrative += ` Your accumulated wealth already covers <span class="wn-highlight">${(wf.wealthRatio*100).toFixed(0)}%</span> of your ${wf.targetLabel} retirement target (${fmt(wf.wTarget)} present value). The effective RSI has been reduced accordingly — <em>you have already purchased most of your future time-value</em>. The model suggests directing more surplus toward present U(t) investment.`;
+    } else if (wf.wealthRatio > 0.5) {
+      narrative += ` Your wealth covers <span class="wn-highlight">${(wf.wealthRatio*100).toFixed(0)}%</span> of the ${wf.targetLabel} target. The gap is ${fmt(wf.wTarget - wf.wealth)}.`;
+    } else {
+      narrative += ` Your wealth covers only <span class="wn-warn">${(wf.wealthRatio*100).toFixed(0)}%</span> of the ${wf.targetLabel} retirement target (${fmt(wf.wTarget)}). The effective RSI remains close to the raw value — future set-aside is the priority.`;
+    }
+
+    narrative += `</p><p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem;">Monthly: Buffer ${fmtM(wf.b1_buffer)} · Debt ${fmtM(wf.b2_debt)} · Present ${fmtM(wf.b3_present)} · Future ${fmtM(wf.b4_future)} · Total ${fmtM(wf.surplus)}</p>`;
+  }
+
+  document.getElementById('waterfall-narrative').innerHTML = narrative;
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function render() {
+  const params = getParams();
+  const retireAge = parseInt(document.getElementById('retire').value);
+  const currentAge = parseInt(document.getElementById('current-age').value);
+  const fullParams = {...params, retireAge};
+
+  if(currentMode==='questionnaire') updateDerivedBar();
+
+  const out = computeModel(fullParams);
+  const scan = lifetimeScan(fullParams);
+
+  const ci = AGES.indexOf(currentAge);
+  const mNow = ci>=0 ? out.M_disc[ci].toFixed(3) : '—';
+  const rsiNow = ci>=0 ? (out.RSI[ci]*100).toFixed(1)+'%' : '—';
+  const lENow = ci>=0 ? out.lE[ci].toFixed(3) : '—';
+  const lFNow = ci>=0 ? out.lF[ci].toFixed(3) : '—';
+  const lUNow = ci>=0 ? out.lU[ci].toFixed(3) : '—';
+  const sNow = ci>=0 ? out.S[ci].toFixed(3) : '—';
+  const peakIdx = scan.full.indexOf(Math.max(...scan.full));
+  const optRetire = scan.ras[peakIdx];
+
+  document.getElementById('readout-bar').innerHTML = [
+    `<span class="rlabel">M(${currentAge})</span> <span class="rval">${mNow}</span>`,
+    `<span class="rlabel">RSI</span> <span class="rval">${rsiNow}</span>`,
+    `<span class="rlabel">λ_E</span> <span class="rval">${lENow}</span>`,
+    `<span class="rlabel">λ_F</span> <span class="rval">${lFNow}</span>`,
+    `<span class="rlabel">λ_U</span> <span class="rval">${lUNow}</span>`,
+    `<span class="rlabel">S(t)</span> <span class="rval">${sNow}</span>`,
+    `<span class="rlabel">∫M·D</span> <span class="rval">${out.lt_full.toFixed(2)}</span>`,
+    `<span class="rlabel">a*_r</span> <span class="rval">${optRetire}</span>`,
+  ].map(s=>`<div class="readout-item">${s}</div>`).join('');
+
+  mc('c-weights','line',[
+    ds('λ_E',out.lE,'#4ecdc4'), ds('λ_F',out.lF,'#5b8def'), ds('λ_U',out.lU,'#e8574a')
+  ],{yMax:1});
+
+  mc('c-survival','line',[ds('S(t)',out.S,'#5b8def',{fill:true})],{yMax:1.05});
+
+  mc('c-components','line',[
+    ds("E'(t)",out.E_n,'#4ecdc4'), ds("F'(t)",out.F_NORM,'#5b8def'), ds("U'(t)",out.U_b,'#e8574a')
+  ],{yMax:1.1});
+
+  mc('c-compare','line',[
+    ds('Additive',out.M_add,'#666',{dash:[5,4]}),
+    ds('Discriminatory',out.M_disc,'#9b72cf',{width:2.5})
+  ]);
+
+  const ptData = ci>=0 ? [{x:currentAge,y:out.M_w[ci]}] : [];
+  mc('c-weighted','line',[
+    ds('M(t)',out.M_disc,'rgba(155,114,207,0.3)',{dash:[4,3]}),
+    ds('M(t)·D(t)',out.M_w,'#c9a84c',{fill:true,width:2.5}),
+    {label:`Age ${currentAge}`,data:ptData,type:'scatter',backgroundColor:'#e8574a',pointRadius:5,borderColor:'#0a0a0f',borderWidth:2}
+  ]);
+
+  mc('c-rsi','line',[ds('RSI(t)',out.RSI,'#e89b4a',{fill:true})],{yMax:1});
+
+  mc('c-scan','line',[
+    ds('Survival-weighted',scan.surv,'#5b8def'),
+    ds('Full discount',scan.full,'#c9a84c',{width:2.5})
+  ],{labels:scan.ras, xLabel:'Retirement Age'});
+
+  // Financial waterfall
+  renderWaterfall(out, currentAge);
+}
+
+// ================================================================
+// WIRING
+// ================================================================
+// Questionnaire sliders
+for(let i=1;i<=10;i++){
+  const el = document.getElementById('q'+i);
+  el.addEventListener('input', () => { document.getElementById('q'+i+'v').textContent = el.value; });
+  el.addEventListener('change', render);
+}
+
+// Direct sliders
+const directIds = ['gamma','eta','delta','rho'];
+const directVals = ['gamma-val','eta-val','delta-val','rho-val'];
+const directFmt = [v=>v.toFixed(1), v=>v.toFixed(2), v=>v.toFixed(2), v=>v.toFixed(3)];
+directIds.forEach((id,i)=>{
+  const el=document.getElementById(id);
+  el.addEventListener('input',()=>{document.getElementById(directVals[i]).textContent=directFmt[i](parseFloat(el.value));});
+  el.addEventListener('change', render);
+});
+
+// Shared sliders
+['retire','current-age'].forEach(id=>{
+  const el=document.getElementById(id);
+  const vid = id==='retire'?'retire-val':'age-val';
+  el.addEventListener('input',()=>{document.getElementById(vid).textContent=el.value;});
+  el.addEventListener('change', render);
+});
+
+// Financial sliders
+const finFmt = {
+  'fin-gross': v => '£'+Math.round(v).toLocaleString(),
+  'fin-fixed': v => '£'+Math.round(v).toLocaleString(),
+  'fin-living': v => '£'+Math.round(v).toLocaleString(),
+  'fin-debt': v => '£'+Math.round(v).toLocaleString(),
+  'fin-buffer': v => '£'+Math.round(v).toLocaleString(),
+  'fin-wealth': v => '£'+Math.round(v).toLocaleString(),
+  'fin-target': v => ['Minimum','Moderate','Comfortable'][parseInt(v)]
+};
+Object.keys(finFmt).forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    document.getElementById(id+'-val').textContent = finFmt[id](parseFloat(el.value));
+  });
+  el.addEventListener('change', render);
+});
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(render, 150));
+</script>
 </body>
 </html>
+
