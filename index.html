@@ -426,6 +426,29 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
+/* Colophon stamp */
+.colophon {
+  text-align: center;
+  padding: 1.2rem 1rem 2rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+.colophon:hover { opacity: 1; }
+.colophon-sep {
+  display: inline-block;
+  margin: 0 0.6em;
+  color: var(--gold-dim);
+}
+.colophon-entity {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 /* Critiques */
 .crit-section {
   background: var(--bg-panel);
@@ -843,6 +866,12 @@ input[type="range"]::-moz-range-thumb {
       The money value of time redeems it.
     </blockquote>
     <div class="attribution">— McCulloch-James, MVT (2025)</div>
+  </div>
+
+  <div class="colophon">
+    <span class="colophon-line">Constructed by Silicon · <span class="colophon-entity">Anthropic Claude</span></span>
+    <span class="colophon-sep">—</span>
+    <span class="colophon-line">Architect Carbon · <span class="colophon-entity">LeeMcCullochJames</span></span>
   </div>
 
 </div>
@@ -1386,5 +1415,6 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(render, 150));
 </script>
 </body>
 </html>
+
 
 
