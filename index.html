@@ -426,6 +426,44 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
+/* Interpretation panel */
+.interp-panel {
+  padding: 0.5rem 0;
+}
+.interp-panel p {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: 0.8rem;
+}
+.interp-panel p:last-child { margin-bottom: 0; }
+.interp-panel .ip-key {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.interp-panel .ip-dim {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.interp-panel .ip-section {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-top: 1.2rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.interp-panel .ip-section:first-child { margin-top: 0; }
+
 /* Colophon stamp */
 .colophon {
   text-align: center;
@@ -778,6 +816,14 @@ input[type="range"]::-moz-range-thumb {
         <div class="chart-wrap"><canvas id="c-scan"></canvas></div>
       </div>
     </div>
+  </div>
+
+  <!-- ============ INTERPRETATION ============ -->
+  <div class="section-box">
+    <h2>What This Means For You
+      <span class="h2sub">A reading of the model output given your current parameters and age.</span>
+    </h2>
+    <div id="interpretation-panel" class="interp-panel"></div>
   </div>
 
   <!-- ============ LIMITATIONS ============ -->
@@ -1325,6 +1371,136 @@ function render() {
 
   // Financial waterfall
   renderWaterfall(out, currentAge);
+
+  // Interpretation panel
+  renderInterpretation(out, scan, fullParams, currentAge);
+}
+
+// ================================================================
+// INTERPRETATION NARRATIVE
+// ================================================================
+function renderInterpretation(out, scan, params, currentAge) {
+  const ci = AGES.indexOf(currentAge);
+  if (ci < 0) { document.getElementById('interpretation-panel').innerHTML = ''; return; }
+
+  const mNow = out.M_disc[ci];
+  const mMax = Math.max(...out.M_disc);
+  const peakAge = AGES[out.M_disc.indexOf(mMax)];
+  const rsiNow = out.RSI[ci];
+  const sNow = out.S[ci];
+  const lE = out.lE[ci], lF = out.lF[ci], lU = out.lU[ci];
+
+  // Gradient (central difference)
+  const dM = ci > 0 && ci < AGES.length - 1
+    ? (out.M_disc[ci+1] - out.M_disc[ci-1]) / 2
+    : 0;
+  const trend = dM > 0.002 ? 'rising' : dM < -0.002 ? 'falling' : 'near its plateau';
+
+  // Dominant weight
+  const weights = [{n:'Economic (E)', v:lE}, {n:'Functional (F)', v:lF}, {n:'Utility (U)', v:lU}];
+  weights.sort((a,b) => b.v - a.v);
+  const dominant = weights[0];
+  const secondary = weights[1];
+
+  // Retirement scan
+  const scanPeakIdx = scan.full.indexOf(Math.max(...scan.full));
+  const optRetire = scan.ras[scanPeakIdx];
+  const scanMinIdx = scan.full.indexOf(Math.min(...scan.full));
+  const worstRetire = scan.ras[scanMinIdx];
+  const scanRange = Math.max(...scan.full) - Math.min(...scan.full);
+  const scanFlat = scanRange < 0.3;
+
+  // Survival-weighted remaining value
+  const remainingValue = AGES.slice(ci).reduce((s, a, i) => {
+    const idx = ci + i;
+    return s + (idx < out.M_disc.length ? out.M_disc[idx] * out.S[idx] : 0);
+  }, 0);
+  const totalValue = AGES.reduce((s, a, i) => s + out.M_disc[i] * out.S[i], 0);
+  const pctRemaining = (remainingValue / totalValue * 100).toFixed(0);
+
+  let html = '';
+
+  // Section 1: Where you stand
+  html += `<div class="ip-section">Your position at age ${currentAge}</div>`;
+  html += `<p>Your composite time-value M(${currentAge}) is <span class="ip-key">${mNow.toFixed(3)}</span>, `;
+  if (mNow >= mMax * 0.9) {
+    html += `which is near the lifetime peak of ${mMax.toFixed(3)} at age ${peakAge}. You are in or close to the highest-value period of your life as the model defines it.`;
+  } else if (mNow >= mMax * 0.5) {
+    html += `which is ${(mNow/mMax*100).toFixed(0)}% of the lifetime peak (${mMax.toFixed(3)} at age ${peakAge}). The value of your time is ${trend}.`;
+  } else {
+    html += `which is ${(mNow/mMax*100).toFixed(0)}% of the lifetime peak. The model sees this as a period of significantly reduced composite value, driven by the dimension(s) that have declined most.`;
+  }
+  html += ` Your survival probability is <span class="ip-key">${(sNow*100).toFixed(0)}%</span>. `;
+  html += `Survival-weighted, <span class="ip-key">${pctRemaining}%</span> of your total lifetime value remains ahead of you.</p>`;
+
+  // Section 2: What the weights say
+  html += `<div class="ip-section">What the model prioritises for you now</div>`;
+  html += `<p>The equilibrium weights at age ${currentAge}: `;
+  html += `<span class="ip-key">λ_E = ${lE.toFixed(3)}</span>, `;
+  html += `<span class="ip-key">λ_F = ${lF.toFixed(3)}</span>, `;
+  html += `<span class="ip-key">λ_U = ${lU.toFixed(3)}</span>. `;
+  html += `The dominant dimension is <span class="ip-key">${dominant.n}</span> (${(dominant.v*100).toFixed(0)}%), `;
+  html += `followed by ${secondary.n} (${(secondary.v*100).toFixed(0)}%). `;
+
+  if (dominant.n.includes('Economic')) {
+    html += `This means earnings capacity is the scarcest resource at your age. The model assigns it highest weight precisely because it is running out. Decisions that protect or extend income have disproportionate impact on M(t).`;
+  } else if (dominant.n.includes('Functional')) {
+    html += `Functional health carries the most weight. This reflects the model's judgement that your remaining health-years are the scarcest resource. Investments in physical capacity (exercise, preventive care, stress reduction) have the highest marginal return on composite life-value.`;
+  } else {
+    html += `Subjective well-being dominates the weighting. At this age the model sees utility as the dimension with most remaining supply relative to the others, but because of the inverse-scarcity logic, the other dimensions (which are scarcer) receive less weight. This is typical in youth and early midlife.`;
+  }
+  html += `</p>`;
+
+  // Section 3: RSI
+  html += `<div class="ip-section">Set-aside signal</div>`;
+  if (currentAge < 40) {
+    html += `<p>The RSI is suppressed before age 40 to reflect limited saving capacity in early adulthood. The model does not advise aggressive saving at this stage; present investment in health, skills, and relationships typically dominates.</p>`;
+  } else {
+    html += `<p>Your RSI is <span class="ip-key">${(rsiNow*100).toFixed(1)}%</span>. `;
+    if (rsiNow < 0.15) {
+      html += `This is low: the model sees your current composite value as close to its peak, and suggests directing most of your surplus toward present life-investment (Bucket 3) rather than future set-aside.`;
+    } else if (rsiNow < 0.4) {
+      html += `This is moderate: the model suggests a balanced split between present consumption and future set-aside. The exact proportion depends on your accumulated wealth (see Income Waterfall below).`;
+    } else {
+      html += `This is high: the model sees a significant gap between your current composite value and its peak, suggesting that a substantial share of surplus should flow to future set-aside. However, check the wealth-adjusted RSI: if you have already accumulated significant assets, the effective RSI may be much lower.`;
+    }
+    html += `</p>`;
+  }
+
+  // Section 4: Retirement scan
+  html += `<div class="ip-section">Retirement age</div>`;
+  if (scanFlat) {
+    html += `<p>The lifetime value curve is relatively flat across retirement ages ${scan.ras[0]}–${scan.ras[scan.ras.length-1]}, varying by less than ${scanRange.toFixed(1)} units. Under your current parameters, the model cannot strongly distinguish between retirement ages. This typically occurs when the leisure dividend δ is low or when γ is high (strongly balance-preferring). The implication: your retirement timing matters less than your dimensional balance.</p>`;
+  } else {
+    html += `<p>Under your current parameters, the fully-discounted lifetime value peaks at retirement age <span class="ip-key">${optRetire}</span>. `;
+    if (optRetire <= 55) {
+      html += `This early optimum reflects a high leisure dividend (δ = ${params.delta.toFixed(2)}): the model believes retirement would substantially boost your well-being, and your survival probability is high enough for that boost to accumulate. This does not mean you should retire at ${optRetire}; it means the model sees a large gap between your working-life satisfaction and your potential retirement satisfaction.`;
+    } else if (optRetire <= 67) {
+      html += `This is in the conventional range. The model balances the earnings contribution of continued work against the survival-weighted utility gain from retirement. Small changes to δ or ρ can shift this by several years (see the sensitivity charts in the white paper).`;
+    } else {
+      html += `This late optimum suggests that under your parameters, the earnings contribution of continued work outweighs the leisure dividend. This can occur with low δ (you enjoy your work or have limited retirement plans), high γ (you strongly prefer dimensional balance and continued earnings help maintain it), or low ρ (you are very patient about future rewards).`;
+    }
+    html += `</p>`;
+  }
+
+  // Section 5: The Cobb-Douglas effect
+  html += `<div class="ip-section">Dimensional complementarity</div>`;
+  const minDim = Math.min(out.E_n[ci], out.F_NORM[ci], out.U_b[ci]);
+  const minLabel = out.E_n[ci] <= out.F_NORM[ci] && out.E_n[ci] <= out.U_b[ci] ? "E' (earnings)"
+    : out.F_NORM[ci] <= out.U_b[ci] ? "F' (health)" : "U' (well-being)";
+  const penalty = Math.pow(Math.max(minDim, 1e-6), params.eta);
+  html += `<p>At age ${currentAge}, the weakest dimension is <span class="ip-key">${minLabel}</span> at ${minDim.toFixed(3)}. `;
+  html += `With η = ${params.eta.toFixed(2)}, the Cobb-Douglas penalty factor is <span class="ip-key">${penalty.toFixed(3)}</span>, `;
+  if (penalty > 0.8) {
+    html += `which is mild: no single dimension is critically low, and the additive and discriminatory M(t) curves are close together at this age.`;
+  } else if (penalty > 0.4) {
+    html += `which represents a moderate drag on your composite value. The weakest dimension is pulling M(t) below what the additive model would suggest.`;
+  } else {
+    html += `which is severe. One dimension has collapsed sufficiently that it dominates the composite. The model is saying that neither high earnings nor high satisfaction can compensate for this deficit.`;
+  }
+  html += `</p>`;
+
+  document.getElementById('interpretation-panel').innerHTML = html;
 }
 
 // ================================================================
@@ -1378,6 +1554,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(render, 150));
 </script>
 </body>
 </html>
+
 
 
 
