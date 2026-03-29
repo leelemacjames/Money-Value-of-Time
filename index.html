@@ -485,39 +485,18 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--red);
+  color: var(--orange);
   margin-bottom: 0.3rem;
-}
-.crit-objection {
-  font-family: var(--sans);
-  font-size: 0.82rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-  font-style: italic;
-  margin-bottom: 0.5rem;
-  padding-left: 0.8rem;
-  border-left: 2px solid var(--red);
-  line-height: 1.5;
 }
 .crit-response {
   font-family: var(--sans);
   font-size: 0.82rem;
   font-weight: 300;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   padding-left: 0.8rem;
-  border-left: 2px solid var(--gold-dim);
+  border-left: 2px solid var(--border);
   line-height: 1.6;
 }
-.crit-verdict {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-top: 0.4rem;
-  padding-left: 0.8rem;
-}
-.crit-verdict .cv-fixed { color: var(--green); }
-.crit-verdict .cv-acknowledged { color: var(--orange); }
-.crit-verdict .cv-structural { color: var(--blue); }
 
 /* Utility */
 .hidden { display: none !important; }
@@ -726,9 +705,13 @@ input[type="range"]::-moz-range-thumb {
         <div class="desc">Pension pot + ISAs + equity − debts. Modifies effective RSI</div>
       </div>
       <div class="control-item">
-        <label>Target Standard <span class="val" id="fin-target-val">Moderate</span></label>
-        <input type="range" id="fin-target" min="0" max="2" step="1" value="1">
-        <div class="desc">PLSA Retirement Living Standard: Minimum / Moderate / Comfortable</div>
+        <label>Target Standard <span class="val" id="fin-target-val"></span></label>
+        <select id="fin-target" style="width:100%;padding:0.5rem;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:0.82rem;cursor:pointer;outline:none;">
+          <option value="0">Minimum — £13,400/yr</option>
+          <option value="1" selected>Moderate — £31,700/yr</option>
+          <option value="2">Comfortable — £43,900/yr</option>
+        </select>
+        <div class="desc">PLSA Retirement Living Standard (one-person household, June 2025)</div>
       </div>
     </div>
   </div>
@@ -797,66 +780,45 @@ input[type="range"]::-moz-range-thumb {
     </div>
   </div>
 
-  <!-- ============ LIMITATIONS & HONEST RESPONSES ============ -->
+  <!-- ============ LIMITATIONS ============ -->
   <div class="crit-section">
-    <h2>Limitations &amp; Honest Responses
-      <span class="h2sub">This model has been subjected to structured critical appraisal. These are the objections and our responses — because a tool that hides its weaknesses is more dangerous than one that names them.</span>
+    <h2>Limitations
+      <span class="h2sub">A tool that hides its weaknesses is more dangerous than one that names them.</span>
     </h2>
 
     <div class="crit-item">
-      <div class="crit-label">Cross-sectional, not longitudinal</div>
-      <div class="crit-objection">The component functions are derived from different people at different ages, not the same cohort tracked over time. Cohort effects in earnings and well-being may distort the profiles.</div>
-      <div class="crit-response">Correct. The model is data-informed but not longitudinally validated. ASHE, EQ-5D, and ONS well-being are all cross-sectional surveys. This means the age profiles capture population-level patterns, not individual trajectories. We have corrected the language from "longitudinal" to "cross-sectional" in all materials.</div>
-      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — language corrected</div>
+      <div class="crit-label">Cross-sectional data</div>
+      <div class="crit-response">All three component functions (ASHE earnings, EQ-5D health, ONS well-being) are derived from cross-sectional surveys: different people at different ages, not the same cohort tracked over time. The age profiles capture population-level patterns, not individual trajectories. Cohort effects in earnings and well-being may distort the profiles.</div>
     </div>
 
     <div class="crit-item">
-      <div class="crit-label">S(t) placement: double-counting risk</div>
-      <div class="crit-objection">The headline equation on this page previously included S(t) inside M(t), but the paper defines M(t) without survival and applies S(t) only in the lifetime integral. This risks ambiguity or double-counting.</div>
-      <div class="crit-response">The headline equation has been updated to show M(t) without S(t), matching the paper's convention. Survival enters only in the lifetime integral and Chart 5 ("Survival-Weighted Value: M(t)·S(t)·e<sup>-ρt</sup>"), which is explicitly the product of the S-free M(t) with the discount factor. No double-counting occurs in the code.</div>
-      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — equation and code now consistent</div>
+      <div class="crit-label">S(t) enters only in the lifetime integral</div>
+      <div class="crit-response">M(t) is defined without survival. S(t) multiplies M(t) only in the lifetime integral and in Chart 5 ("Survival-Weighted Value"). The two are computed separately in the code. There is no double-counting.</div>
     </div>
 
     <div class="crit-item">
-      <div class="crit-label">Normative choices disguised as structure</div>
-      <div class="crit-objection">The Cobb-Douglas penalty min(E',F',U')^η and the leisure dividend δ are philosophical claims, not empirical results. The interior retirement-age optimum is model-created. Without these assumptions, the curve is monotone.</div>
-      <div class="crit-response">This is correct and we regard it as a feature. The model makes its normative assumptions explicit and tunable. Set η = 0 to recover the pure additive model. Set δ = 0 to remove the leisure dividend. The sensitivity charts (Charts 7, and the white paper's Figures 3–4) show exactly how the optimum moves under these choices. The correct interpretation is: <em>"if you believe retirement boosts satisfaction by this much, and dimensional collapse is this penalising, then the implied optimum is here."</em> This is a conditional calculator, not an oracle.</div>
-      <div class="crit-verdict"><span class="cv-structural">STRUCTURAL</span> — by design, not a bug</div>
+      <div class="crit-label">Normative choices are explicit, not empirical</div>
+      <div class="crit-response">The Cobb-Douglas penalty (η) and the leisure dividend (δ) are modelling choices, not empirical results. Without them, the retirement-age curve is monotone and the interior optimum disappears. Set η = 0 or δ = 0 to remove either mechanism. This is a conditional calculator, not an oracle.</div>
     </div>
 
     <div class="crit-item">
-      <div class="crit-label">CRRA ≠ EIS</div>
-      <div class="crit-objection">The paper described γ as "the coefficient of relative risk aversion (equivalently, the elasticity of intertemporal substitution)." In standard macro-finance, EIS = 1/γ; they are reciprocals, not equivalents.</div>
-      <div class="crit-response">Corrected. γ here governs curvature over dimensional balance (how much the agent dislikes one dimension high and another low), which is the CRRA interpretation. EIS is its reciprocal and describes willingness to shift consumption across time, not across life dimensions.</div>
-      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — paper and tool now precise</div>
+      <div class="crit-label">Questionnaire is preference elicitation, not calibration</div>
+      <div class="crit-response">The ten-question mapping to γ, η, δ, ρ is theoretically motivated but empirically unvalidated. There is no evidence yet that the derived parameters predict observed saving, consumption, or retirement timing. The "Direct Sliders" mode bypasses the questionnaire entirely.</div>
     </div>
 
     <div class="crit-item">
-      <div class="crit-label">Questionnaire ≠ calibration</div>
-      <div class="crit-objection">The ten-question mapping is elegant as UX but has no evidence linking it to observed saving, consumption, or retirement behaviour. It should be presented as preference elicitation, not empirical calibration.</div>
-      <div class="crit-response">Agreed. The questionnaire is a preference-elicitation interface. Until validated against panel data (e.g. ELSA, Understanding Society), the mappings are theoretically motivated but not empirically grounded. The "Direct Sliders" mode is provided as an alternative for users who prefer to set parameters without the questionnaire framing.</div>
-      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — reframed as elicitation</div>
-    </div>
-
-    <div class="crit-item">
-      <div class="crit-label">Data vintage</div>
-      <div class="crit-objection">PLSA figures, State Pension rates, and ASHE earnings have been updated since the original paper. A March 2026 revision should use current values.</div>
-      <div class="crit-response">PLSA targets updated to June 2025 values (£13,400 / £31,700 / £43,900 one-person). State Pension updated to £241.30/week (£12,548/year) from April 2026. ASHE 2024 age-band anchors retained: the 2025 release shifts E(t) up ~5% uniformly without altering the age-profile shape. EQ-5D anchors from HSE 2014 remain the most recent publicly available sex-averaged values.</div>
-      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — PLSA and State Pension refreshed</div>
-    </div>
-
-    <div class="crit-item">
-      <div class="crit-label">Normalisation hides scale</div>
-      <div class="crit-objection">Mapping E, F, U to [0,1] loses the fact that earnings vary by ~8× across the lifespan while EQ-5D varies by only ~0.25. The normalisation asserts commensurability at unit scale without empirical justification.</div>
-      <div class="crit-response">A genuine limitation. Weighting raw (unnormalised) dimensions would require an explicit exchange rate between £/week, QALY-utilities, and ONS happiness points — a problem health economics has wrestled with for decades. The normalisation is a simplifying assumption, not a claim of demonstrated equivalence.</div>
-      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — inherent to composite indices</div>
+      <div class="crit-label">Normalisation asserts commensurability</div>
+      <div class="crit-response">Mapping E, F, U to [0,1] loses the fact that earnings vary by ~8× across the lifespan while EQ-5D varies by only ~0.25. Weighting raw dimensions would require an explicit exchange rate between £/week, QALY-utilities, and ONS happiness points. The normalisation is a simplifying assumption, not a claim of demonstrated equivalence.</div>
     </div>
 
     <div class="crit-item">
       <div class="crit-label">No uncertainty quantification</div>
-      <div class="crit-objection">The model produces point estimates from median values at sparse age points with no confidence intervals, bootstrap, or Monte Carlo propagation. Users may read the retirement-age chart as a recommendation when it is a sensitivity-heavy thought experiment.</div>
-      <div class="crit-response">This is the most important gap. The tool should display scenario ranges and flag when the optimum shifts materially under small parameter changes. Until confidence bands are implemented, users should treat all outputs as indicative explorations of structural trade-offs, not as financial recommendations.</div>
-      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — most important gap for deployment</div>
+      <div class="crit-response">The model produces point estimates from median values at sparse age points. There are no confidence intervals, bootstrap, or Monte Carlo propagation. All outputs should be treated as indicative explorations of structural trade-offs, not as financial recommendations. This is the most important gap.</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">Data vintage</div>
+      <div class="crit-response">PLSA targets: June 2025 update (£13,400 / £31,700 / £43,900 one-person). State Pension: £241.30/week (£12,548/year) from April 2026. ASHE 2024 age-band anchors retained (2025 release shifts E(t) up ~5% uniformly without altering shape). EQ-5D anchors from HSE 2014 remain the most recent publicly available sex-averaged values.</div>
     </div>
   </div>
 
@@ -1401,7 +1363,6 @@ const finFmt = {
   'fin-debt': v => '£'+Math.round(v).toLocaleString(),
   'fin-buffer': v => '£'+Math.round(v).toLocaleString(),
   'fin-wealth': v => '£'+Math.round(v).toLocaleString(),
-  'fin-target': v => ['Minimum','Moderate','Comfortable'][parseInt(v)]
 };
 Object.keys(finFmt).forEach(id => {
   const el = document.getElementById(id);
@@ -1410,6 +1371,8 @@ Object.keys(finFmt).forEach(id => {
   });
   el.addEventListener('change', render);
 });
+// Target standard is a <select>, not a slider
+document.getElementById('fin-target').addEventListener('change', render);
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(render, 150));
 </script>
