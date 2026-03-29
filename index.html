@@ -426,6 +426,76 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
+/* Critiques */
+.crit-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+}
+.crit-section h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.crit-section h2 .h2sub {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.2rem;
+}
+.crit-item {
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.crit-item:last-child { border-bottom: none; }
+.crit-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 0.3rem;
+}
+.crit-objection {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 0.5rem;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--red);
+  line-height: 1.5;
+}
+.crit-response {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--gold-dim);
+  line-height: 1.6;
+}
+.crit-verdict {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  padding-left: 0.8rem;
+}
+.crit-verdict .cv-fixed { color: var(--green); }
+.crit-verdict .cv-acknowledged { color: var(--orange); }
+.crit-verdict .cv-structural { color: var(--blue); }
+
 /* Utility */
 .hidden { display: none !important; }
 </style>
@@ -436,7 +506,7 @@ input[type="range"]::-moz-range-thumb {
   <div class="header">
     <h1>Money Value of Time</h1>
     <div class="subtitle">AUGMENTED MODEL — MODIGLIANI + GOMPERTZ + COBB-DOUGLAS</div>
-    <div class="equation">M(t) = [λ_E(t)·E' + λ_F(t)·F' + λ_U(t)·U'] · min(E',F',U')^η · S(t)</div>
+    <div class="equation">M(t) = [λ_E(t)·E' + λ_F(t)·F' + λ_U(t)·U'] · min(E',F',U')^η</div>
   </div>
 
   <!-- ============ CALIBRATION SECTION ============ -->
@@ -704,6 +774,69 @@ input[type="range"]::-moz-range-thumb {
     </div>
   </div>
 
+  <!-- ============ LIMITATIONS & HONEST RESPONSES ============ -->
+  <div class="crit-section">
+    <h2>Limitations &amp; Honest Responses
+      <span class="h2sub">This model has been subjected to structured critical appraisal. These are the objections and our responses — because a tool that hides its weaknesses is more dangerous than one that names them.</span>
+    </h2>
+
+    <div class="crit-item">
+      <div class="crit-label">Cross-sectional, not longitudinal</div>
+      <div class="crit-objection">The component functions are derived from different people at different ages, not the same cohort tracked over time. Cohort effects in earnings and well-being may distort the profiles.</div>
+      <div class="crit-response">Correct. The model is data-informed but not longitudinally validated. ASHE, EQ-5D, and ONS well-being are all cross-sectional surveys. This means the age profiles capture population-level patterns, not individual trajectories. We have corrected the language from "longitudinal" to "cross-sectional" in all materials.</div>
+      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — language corrected</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">S(t) placement: double-counting risk</div>
+      <div class="crit-objection">The headline equation on this page previously included S(t) inside M(t), but the paper defines M(t) without survival and applies S(t) only in the lifetime integral. This risks ambiguity or double-counting.</div>
+      <div class="crit-response">The headline equation has been updated to show M(t) without S(t), matching the paper's convention. Survival enters only in the lifetime integral and Chart 5 ("Survival-Weighted Value: M(t)·S(t)·e<sup>-ρt</sup>"), which is explicitly the product of the S-free M(t) with the discount factor. No double-counting occurs in the code.</div>
+      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — equation and code now consistent</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">Normative choices disguised as structure</div>
+      <div class="crit-objection">The Cobb-Douglas penalty min(E',F',U')^η and the leisure dividend δ are philosophical claims, not empirical results. The interior retirement-age optimum is model-created. Without these assumptions, the curve is monotone.</div>
+      <div class="crit-response">This is correct and we regard it as a feature. The model makes its normative assumptions explicit and tunable. Set η = 0 to recover the pure additive model. Set δ = 0 to remove the leisure dividend. The sensitivity charts (Charts 7, and the white paper's Figures 3–4) show exactly how the optimum moves under these choices. The correct interpretation is: <em>"if you believe retirement boosts satisfaction by this much, and dimensional collapse is this penalising, then the implied optimum is here."</em> This is a conditional calculator, not an oracle.</div>
+      <div class="crit-verdict"><span class="cv-structural">STRUCTURAL</span> — by design, not a bug</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">CRRA ≠ EIS</div>
+      <div class="crit-objection">The paper described γ as "the coefficient of relative risk aversion (equivalently, the elasticity of intertemporal substitution)." In standard macro-finance, EIS = 1/γ; they are reciprocals, not equivalents.</div>
+      <div class="crit-response">Corrected. γ here governs curvature over dimensional balance (how much the agent dislikes one dimension high and another low), which is the CRRA interpretation. EIS is its reciprocal and describes willingness to shift consumption across time, not across life dimensions.</div>
+      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — paper and tool now precise</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">Questionnaire ≠ calibration</div>
+      <div class="crit-objection">The ten-question mapping is elegant as UX but has no evidence linking it to observed saving, consumption, or retirement behaviour. It should be presented as preference elicitation, not empirical calibration.</div>
+      <div class="crit-response">Agreed. The questionnaire is a preference-elicitation interface. Until validated against panel data (e.g. ELSA, Understanding Society), the mappings are theoretically motivated but not empirically grounded. The "Direct Sliders" mode is provided as an alternative for users who prefer to set parameters without the questionnaire framing.</div>
+      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — reframed as elicitation</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">Data vintage</div>
+      <div class="crit-objection">PLSA figures, State Pension rates, and ASHE earnings have been updated since the original paper. A March 2026 revision should use current values.</div>
+      <div class="crit-response">PLSA targets updated to June 2025 values (£13,400 / £31,700 / £43,900 one-person). State Pension updated to £241.30/week (£12,548/year) from April 2026. ASHE 2024 age-band anchors retained: the 2025 release shifts E(t) up ~5% uniformly without altering the age-profile shape. EQ-5D anchors from HSE 2014 remain the most recent publicly available sex-averaged values.</div>
+      <div class="crit-verdict"><span class="cv-fixed">FIXED</span> — PLSA and State Pension refreshed</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">Normalisation hides scale</div>
+      <div class="crit-objection">Mapping E, F, U to [0,1] loses the fact that earnings vary by ~8× across the lifespan while EQ-5D varies by only ~0.25. The normalisation asserts commensurability at unit scale without empirical justification.</div>
+      <div class="crit-response">A genuine limitation. Weighting raw (unnormalised) dimensions would require an explicit exchange rate between £/week, QALY-utilities, and ONS happiness points — a problem health economics has wrestled with for decades. The normalisation is a simplifying assumption, not a claim of demonstrated equivalence.</div>
+      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — inherent to composite indices</div>
+    </div>
+
+    <div class="crit-item">
+      <div class="crit-label">No uncertainty quantification</div>
+      <div class="crit-objection">The model produces point estimates from median values at sparse age points with no confidence intervals, bootstrap, or Monte Carlo propagation. Users may read the retirement-age chart as a recommendation when it is a sensitivity-heavy thought experiment.</div>
+      <div class="crit-response">This is the most important gap. The tool should display scenario ranges and flag when the optimum shifts materially under small parameter changes. Until confidence bands are implemented, users should treat all outputs as indicative explorations of structural trade-offs, not as financial recommendations.</div>
+      <div class="crit-verdict"><span class="cv-acknowledged">ACKNOWLEDGED</span> — most important gap for deployment</div>
+    </div>
+  </div>
+
   <div class="footer-quote">
     <blockquote>
       The time value of money discounts the future.<br>
@@ -948,9 +1081,9 @@ function mc(id,type,datasets,opts={}){
 // ================================================================
 // FINANCIAL WATERFALL
 // ================================================================
-const PLSA_ANNUAL = [14400, 31300, 43100]; // min, moderate, comfortable (2025/26)
+const PLSA_ANNUAL = [13400, 31700, 43900]; // min, moderate, comfortable (June 2025 update, one-person)
 const PLSA_LABELS = ['Minimum','Moderate','Comfortable'];
-const STATE_PENSION_ANNUAL = 11973; // 2025/26 full new state pension
+const STATE_PENSION_ANNUAL = 12548; // 2026/27 full new state pension (£241.30/week)
 
 function estimateTax(gross) {
   // Simplified UK income tax + NI 2025/26
@@ -1253,4 +1386,5 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(render, 150));
 </script>
 </body>
 </html>
+
 
